@@ -6,6 +6,7 @@ import { useResources } from '../hooks/useResources';
 import { useCreateKnowledgeBase } from '../hooks/useKnowledgeBase';
 import { useTriggerSync } from '../hooks/useTriggerSync';
 import { useDeleteKnowledgeBaseResource, useKnowledgeBaseResources } from '../hooks/useKnowledgeBaseResources';
+import { useKnowledgeBaseStore } from '../store/knowledgeBaseStore';
 
 // Custom UI components
 const Button = ({ children, onClick, variant = "primary", disabled = false, className = "", size = "md" }) => {
@@ -65,21 +66,6 @@ const Skeleton = ({ className = "" }) => {
   );
 };
 
-const Tooltip = ({ children, content }) => {
-  const [show, setShow] = useState(false);
-
-  return (
-    <div className="relative inline-block" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
-      {children}
-      {show && (
-        <div className="absolute z-10 px-2 py-1 text-xs text-white bg-gray-900 rounded bottom-full mb-2 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-          {content}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Dropdown menu component
 const Dropdown = ({ trigger, items, className = "" }) => {
@@ -422,7 +408,7 @@ const ResourceItem = ({
         </td>
         <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
           <div className="flex justify-end space-x-2">
-            {indexingStatus[resourceId] === 'Synchronized' && (
+            {(indexingStatus[resourceId] === 'Synchronized') && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -499,6 +485,7 @@ export default function FilePicker() {
   const [indexingStatus, setIndexingStatus] = useState({});
   const [showDateColumn, setShowDateColumn] = useState(true);
 
+  const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
 
 
 
@@ -514,6 +501,104 @@ export default function FilePicker() {
 
   const { trigger: deleteKB, isMutating: isMutatingDeleteKB, error: errorDeleteKb } = useDeleteKnowledgeBaseResource(dataKB?.knowledgeBase?.knowledge_base_id);
   // const { data: KBResourcesData, error: KBResourcesError, isLoading: KBResourcesIsLoading, mutate: KBResourcesMutate } = useKnowledgeBaseResources('58aaac70-0c25-4049-8241-358a4868a567', authToken);
+
+  const {
+    knowledgeBaseId,
+    exists: kbExists,
+    isSyncing,
+    knowledgeBaseHistory,
+    setKnowledgeBase,
+    clearKnowledgeBase,
+    switchToKnowledgeBase,
+    removeFromHistory,
+    setSyncing
+  } = useKnowledgeBaseStore();
+
+  const KnowledgeBaseHistory = () => {
+    if (knowledgeBaseHistory.length === 0) return null;
+
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
+          className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+        >
+          <File className="h-4 w-4" />
+          Previous Knowledge Bases
+        </button>
+
+        {showHistoryDropdown && (
+          <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border border-gray-200 z-50 w-64">
+            <div className="p-2 text-sm font-medium text-gray-600 border-b">
+              Knowledge Base History
+            </div>
+            <ul className="max-h-60 overflow-auto">
+              {knowledgeBaseHistory.map((id) => (
+                <li
+                  key={id}
+                  className="flex items-center justify-between p-2 hover:bg-gray-50 border-b last:border-b-0"
+                >
+                  <button
+                    onClick={() => {
+                      switchToKnowledgeBase(id);
+                      setShowHistoryDropdown(false);
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-800 truncate max-w-[160px]"
+                    title={id}
+                  >
+                    {id.substring(0, 8)}...
+                  </button>
+                  <button
+                    onClick={() => removeFromHistory(id)}
+                    className="text-red-500 hover:text-red-700"
+                    title="Remove from history"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const ActionButtons = () => (
+    <div className="flex space-x-2 w-full sm:w-auto">
+      {kbExists ? (
+        <>
+          <Button
+            onClick={syncIndexedFiles}
+            variant="primary"
+            disabled={isSyncing || selectedResources.length === 0}
+            className="flex items-center gap-1 w-full sm:w-auto"
+          >
+            <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing...' : 'Sync'}
+          </Button>
+          <Button
+            onClick={() => clearKnowledgeBase()}
+            variant="outline"
+            className="flex items-center gap-1 w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            New KB
+          </Button>
+        </>
+      ) : (
+        <Button
+          onClick={indexSelectedFiles}
+          variant="primary"
+          disabled={selectedResources.length === 0}
+          className="flex items-center gap-1 w-full sm:w-auto"
+        >
+          <Plus className="h-4 w-4" />
+          Index Selected ({selectedResources.length})
+        </Button>
+      )}
+    </div>
+  );
 
 
 
@@ -539,7 +624,8 @@ export default function FilePicker() {
 
   useEffect(() => {
     if (dataKB?.knowledgeBase?.knowledge_base_id) {
-      syncIndexedFiles();
+      setKnowledgeBase(dataKB?.knowledgeBase?.knowledge_base_id);
+      // syncIndexedFiles();
     }
   }, [dataKB]);
   // Extract root resources from the response
@@ -594,8 +680,6 @@ export default function FilePicker() {
         },
       });
 
-      console.log('Knowledge base created:');
-
 
       // Update status to indexed
       const indexedStatus = {};
@@ -641,33 +725,13 @@ export default function FilePicker() {
         ...updatedStatus
       }));
 
-      // console.log('Indexing files:', leafResourceIds);
-      // await new Promise(resolve => setTimeout(resolve, 3000));
-      // // Create knowledge base using only leaf node IDs
-      // await createKB({
-      //   authToken,
-      //   body: {
-      //     connectionId,
-      //     connectionSourceIds: leafResourceIds,
-      //     name: 'Knowledge Base ' + new Date().toLocaleString(),
-      //   },
-      // });
 
       await sync({ authToken })
 
       console.log('sync base created:');
 
 
-      // Update status to indexed
-      // const indexedStatus = {};
-      // selectedResources.forEach(id => {
-      //   indexedStatus[id] = 'Synchronized';
-      // });
 
-      // setIndexingStatus(prev => ({
-      //   ...prev,
-      //   ...indexedStatus
-      // }));
     } catch (error) {
       console.error('Error indexing files:', error);
 
@@ -793,7 +857,7 @@ export default function FilePicker() {
             <Button
               variant="outline"
               size="sm"
-              // onClick={() => mutate()}
+              onClick={() => mutate()}
               className="flex items-center gap-1"
             >
               <RefreshCw className="h-4 w-4" /> Refresh
@@ -817,7 +881,7 @@ export default function FilePicker() {
           </div>
         </div>
 
-        {/* Search and actions */}
+        {/* Search, actions and KB history */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="relative w-full sm:w-auto sm:flex-grow max-w-md">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
@@ -829,25 +893,29 @@ export default function FilePicker() {
             />
           </div>
 
-          <div className="flex space-x-2 w-full sm:w-auto">
-            <Button
-              onClick={indexSelectedFiles}
-              variant="primary"
-              disabled={selectedResources.length === 0}
-              className="flex items-center gap-1 w-full sm:w-auto"
-            >
-              <RefreshCw className="h-4 w-4" /> Sync
-            </Button>
-            <Button
-              onClick={indexSelectedFiles}
-              variant="primary"
-              disabled={selectedResources.length === 0}
-              className="flex items-center gap-1 w-full sm:w-auto"
-            >
-              <Plus className="h-4 w-4" /> Index Selected ({selectedResources.length})
-            </Button>
+          <div className="flex items-center space-x-4 w-full sm:w-auto">
+            <KnowledgeBaseHistory />
+            <ActionButtons />
           </div>
         </div>
+
+        {/* Active KB indicator */}
+        {kbExists && (
+          <div className="bg-blue-50 p-2 rounded-md border border-blue-200 flex justify-between items-center">
+            <div className="flex items-center">
+              <span className="font-medium text-blue-800 mr-2">Active Knowledge Base:</span>
+              <span className="text-blue-600">{knowledgeBaseId}</span>
+            </div>
+            <Button
+              onClick={() => clearKnowledgeBase()}
+              variant="outline"
+              size="sm"
+              className="text-sm"
+            >
+              Reset
+            </Button>
+          </div>
+        )}
 
         {/* Files table */}
         <div className="border rounded-md overflow-hidden">
