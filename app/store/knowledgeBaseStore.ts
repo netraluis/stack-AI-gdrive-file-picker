@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 
 interface KnowledgeBaseState {
-  knowledgeBaseId: string | null;
+  knowledgeBaseId: string | undefined;
   exists: boolean;
   isSyncing: boolean;
   knowledgeBaseHistory: string[];
@@ -15,7 +15,7 @@ interface KnowledgeBaseState {
 
 export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => ({
   // Current active knowledge base
-  knowledgeBaseId: null,
+  knowledgeBaseId: undefined,
   exists: false,
   isSyncing: false,
   
@@ -46,7 +46,7 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => ({
       set({ knowledgeBaseHistory: [...history, current] });
     }
     
-    set({ knowledgeBaseId: null, exists: false });
+    set({ knowledgeBaseId: undefined, exists: false });
   },
   
   switchToKnowledgeBase: (id) => {

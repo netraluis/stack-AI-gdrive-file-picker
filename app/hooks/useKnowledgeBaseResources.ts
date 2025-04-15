@@ -11,7 +11,7 @@ const fetcher = ([url, token]: [string, string]) =>
     return res.json();
   });
 
-export function useKnowledgeBaseResources(kbId: string, token: string) {
+export function useKnowledgeBaseResources(kbId: string | undefined, token: string) {
   const url = `/api/knowledge-bases/${kbId}/resources/children`;
   const shouldFetch = token && kbId;
 
@@ -55,7 +55,7 @@ async function deleteKnowledgeBaseResource(
   return data;
 }
 
-export function useDeleteKnowledgeBaseResource(kbId: string) {
+export function useDeleteKnowledgeBaseResource(kbId: string | undefined) {
   const url = kbId ? `/api/knowledge-bases/${kbId}/resources` : null;
 
   return useSWRMutation(url, deleteKnowledgeBaseResource);

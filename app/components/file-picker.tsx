@@ -480,25 +480,6 @@ export default function FilePicker() {
   const { trigger: createKB, data: dataKB, error: errorKB, isMutating } = useCreateKnowledgeBase()
 
   const {
-    trigger: sync,
-    data: syncData,
-    error: triggerError,
-  } = useTriggerSync(orgId, dataKB?.knowledgeBase?.knowledge_base_id)
-
-  const {
-    data: KBResourcesData,
-    error: KBResourcesError,
-    isLoading: KBResourcesIsLoading,
-    mutate: KBResourcesMutate,
-  } = useKnowledgeBaseResources(dataKB?.knowledgeBase?.knowledge_base_id, authToken)
-
-  const {
-    trigger: deleteKB,
-    isMutating: isMutatingDeleteKB,
-    error: errorDeleteKb,
-  } = useDeleteKnowledgeBaseResource(dataKB?.knowledgeBase?.knowledge_base_id)
-
-  const {
     knowledgeBaseId,
     exists: kbExists,
     isSyncing,
@@ -509,6 +490,27 @@ export default function FilePicker() {
     removeFromHistory,
     setSyncing,
   } = useKnowledgeBaseStore()
+
+  const {
+    trigger: sync,
+    data: syncData,
+    error: triggerError,
+  } = useTriggerSync(orgId, knowledgeBaseId)
+
+  const {
+    data: KBResourcesData,
+    error: KBResourcesError,
+    isLoading: KBResourcesIsLoading,
+    mutate: KBResourcesMutate,
+  } = useKnowledgeBaseResources(knowledgeBaseId, authToken)
+
+  const {
+    trigger: deleteKB,
+    isMutating: isMutatingDeleteKB,
+    error: errorDeleteKb,
+  } = useDeleteKnowledgeBaseResource(knowledgeBaseId)
+
+
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
