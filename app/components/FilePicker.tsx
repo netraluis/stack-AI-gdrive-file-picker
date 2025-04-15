@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Folder, File, ChevronRight, ChevronDown, Search, ArrowUp, Trash2, Check, RefreshCw, Plus, ArrowUpDown, Calendar, SortAsc, SortDesc, Filter, Tag } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Folder, File, ChevronRight, ChevronDown, Search, ArrowUp, Trash2, Check, RefreshCw, Plus, ArrowUpDown, Calendar, SortAsc, SortDesc, Filter, Tag, FolderOpen } from 'lucide-react';
 import { useAuth } from '../context/authContext';
 import { useResources } from '../hooks/useResources';
 import { useCreateKnowledgeBase } from '../hooks/useKnowledgeBase';
@@ -8,7 +8,7 @@ import { useCreateKnowledgeBase } from '../hooks/useKnowledgeBase';
 // Custom UI components
 const Button = ({ children, onClick, variant = "primary", disabled = false, className = "", size = "md" }) => {
   const baseClasses = "rounded font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50";
-  
+
   const variantClasses = {
     primary: "bg-blue-600 text-white hover:bg-blue-700",
     secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
@@ -16,16 +16,16 @@ const Button = ({ children, onClick, variant = "primary", disabled = false, clas
     outline: "border border-gray-300 hover:bg-gray-50",
     danger: "bg-red-600 text-white hover:bg-red-700",
   };
-  
+
   const sizeClasses = {
     sm: "px-2 py-1 text-sm",
     md: "px-4 py-2",
     lg: "px-6 py-3 text-lg",
     icon: "p-1"
   };
-  
+
   const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer";
-  
+
   return (
     <button
       onClick={disabled ? undefined : onClick}
@@ -65,7 +65,7 @@ const Skeleton = ({ className = "" }) => {
 
 const Tooltip = ({ children, content }) => {
   const [show, setShow] = useState(false);
-  
+
   return (
     <div className="relative inline-block" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
       {children}
@@ -82,35 +82,35 @@ const Tooltip = ({ children, content }) => {
 // Dropdown menu component
 const Dropdown = ({ trigger, items, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const toggleDropdown = () => setIsOpen(!isOpen);
-  
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       if (isOpen) setIsOpen(false);
     };
-    
+
     document.addEventListener('click', handleClickOutside);
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
   }, [isOpen]);
-  
+
   return (
     <div className={`relative ${className}`}>
       <div onClick={(e) => { e.stopPropagation(); toggleDropdown(); }}>
         {trigger}
       </div>
-      
+
       {isOpen && (
         <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
           {items.map((item, index) => (
             <div
               key={index}
               className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center"
-              onClick={(e) => { 
-                e.stopPropagation(); 
+              onClick={(e) => {
+                e.stopPropagation();
                 item.onClick();
                 setIsOpen(false);
               }}
@@ -125,64 +125,332 @@ const Dropdown = ({ trigger, items, className = "" }) => {
   );
 };
 
+// ResourceItem component - renders a single file/folder row with nested children
+const ResourceItem = ({
+  resource,
+  depth = 0,
+  expandedFolders,
+  setExpandedFolders,
+  selectedResources,
+  setSelectedResources,
+  onRemoveResource,
+  childResourcesMap,
+  setChildResourcesMap,
+  showDateColumn,
+  connectionId,
+  authToken,
+  indexingStatus,
+  setIndexingStatus
+}) => {
+
+
+  const isFolder = resource.inode_type === 'directory';
+  const resourceId = resource.resource_id;
+  const isExpanded = expandedFolders.includes(resourceId);
+  const isSelected = selectedResources.includes(resourceId);
+  const fileName = resource.inode_path.path.split('/').filter(Boolean).pop() || '';
+  const isIndexed = resource.status === 'indexed';
+  const isPending = resource.status === 'pending';
+  const isProcessing = indexingStatus[resourceId] === 'indexing' || indexingStatus[resourceId] === 'removing';
+  const [getData, setGetData] = useState(false);
+
+
+
+  const { resources, isLoading, error, mutate } = useResources(getData ? connectionId : null, authToken, resourceId);
+
+  // Dentro del componente ResourceItem
+  useEffect(() => {
+    // Cargar datos sólo cuando la carpeta está expandida y aún no tenemos los datos
+    if (isExpanded && isFolder && (!childResources || childResources.length === 0)) {
+      setGetData(true)
+    }
+  }, [isExpanded]); // Dependencia en isExpanded
+
+  useEffect(() => {
+    if (!childResourcesMap[resourceId] || childResourcesMap[resourceId].length === 0) {
+
+      const children = resources?.resources?.data || [];
+      setChildResourcesMap(prev => ({
+        ...prev,
+        [resourceId]: children
+      }));
+    }
+  }, [resources]);
+
+  // Get child resources if they exist in the map
+  const childResources = childResourcesMap[resourceId] || [];
+
+  // Check if all children are selected (for indeterminate state)
+  const hasChildren = childResources.length > 0;
+  const allChildrenSelected = hasChildren && childResources.every(child =>
+    selectedResources.includes(child.resource_id)
+  );
+
+  const someChildrenSelected = hasChildren && childResources.some(child =>
+    selectedResources.includes(child.resource_id)
+  );
+
+
+
+  // Indeterminate state: some children selected but not all
+  const isIndeterminate = someChildrenSelected && !allChildrenSelected;
+
+  const toggleExpand = async (e) => {
+    e.stopPropagation();
+    if (!isFolder) return;
+
+    if (isExpanded) {
+      // Collapse folder
+      setExpandedFolders(prev => prev.filter(id => id !== resourceId));
+    } else {
+      // Expand folder
+      setExpandedFolders(prev => [...prev, resourceId]);
+    }
+  };
+
+  const toggleSelection = async (e) => {
+    e.stopPropagation();
+
+    if (isSelected) {
+      // Deselect this resource
+      setSelectedResources(prev => prev.filter(id => id !== resourceId));
+
+      // If it's a folder, also deselect all children recursively
+      if (isFolder) {
+        deselectAllChildren(resourceId);
+      }
+    } else {
+      setSelectedResources(prev => [...prev, resourceId]);
+
+      // If it's a folder, also select all children recursively
+      if (isFolder) {
+        selectAllChildren(resourceId);
+      }
+    }
+  };
+
+  const selectAllChildren = (folderId) => {
+    // console.log('selectAllChildren', { folderId, childResourcesMap });
+    // setExpandedFolders(prev => [...prev, resourceId]);
+    const children = childResourcesMap[folderId] || [];
+
+    for (const child of children) {
+      const childId = child.resource_id;
+
+      // Add child to selected resources if not already selected
+      if (!selectedResources.includes(childId)) {
+        setSelectedResources(prev => [...prev, childId]);
+      }
+
+      // If child is a folder, recursively select its children
+      if (child.inode_type === 'directory') {
+        selectAllChildren(childId);
+      }
+    }
+  };
+
+  const deselectAllChildren = (folderId) => {
+    const children = childResourcesMap[folderId] || [];
+
+    for (const child of children) {
+      const childId = child.resource_id;
+
+      // Remove child from selected resources
+      setSelectedResources(prev => prev.filter(id => id !== childId));
+
+      // If child is a folder, recursively deselect its children
+      if (child.inode_type === 'directory') {
+        deselectAllChildren(childId);
+      }
+    }
+  };
+
+  const getStatusBadge = () => {
+    // First check processing status
+    if (indexingStatus[resourceId]) {
+      const status = indexingStatus[resourceId];
+
+      const statusColors = {
+        indexing: "bg-blue-100 text-blue-800",
+        removing: "bg-orange-100 text-orange-800",
+        indexed: "bg-green-100 text-green-800",
+        failed: "bg-red-100 text-red-800"
+      };
+
+      return (
+        <Badge className={statusColors[status] || ''}>
+          {status === 'indexing' ? 'indexing...' :
+            status === 'removing' ? 'removing...' : status}
+        </Badge>
+      );
+    }
+
+    // Then check resource status
+    if (!resource.status) return null;
+
+    const statusColors = {
+      indexed: "bg-green-100 text-green-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      indexing: "bg-blue-100 text-blue-800",
+      failed: "bg-red-100 text-red-800"
+    };
+
+    return (
+      <Badge className={statusColors[resource.status] || ''}>
+        {resource.status}
+      </Badge>
+    );
+  };
+
+  return (
+    <>
+      <tr
+        key={resourceId}
+        className={`hover:bg-gray-50 ${isExpanded ? 'bg-gray-50' : ''}`}
+        onClick={isFolder ? toggleExpand : undefined}
+        style={{ cursor: isFolder ? 'pointer' : 'default' }}
+      >
+        <td className="whitespace-nowrap">
+          <div className="flex items-center py-2" style={{ paddingLeft: `${16 }px` }}>
+            <div className="relative flex items-center">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                checked={isSelected && !isIndeterminate}
+                onChange={toggleSelection}
+                disabled={isProcessing}
+                onClick={(e) => e.stopPropagation()}
+              />
+              {/* {isIndeterminate && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-2 h-2 bg-blue-600 rounded-sm"></div>
+                </div>
+              )} */}
+            </div>
+          </div>
+        </td>
+        <td className="px-2 py-2 whitespace-nowrap" style={{ paddingLeft: `${depth * 20}px` }}>
+          <div className="flex items-center">
+            {isFolder && (
+              isExpanded ?
+                <ChevronDown className="h-4 w-4 text-gray-500 mr-1" /> :
+                <ChevronRight className="h-4 w-4 text-gray-500 mr-1" />
+            )}
+            {isFolder ? (
+              isExpanded ? (
+                <FolderOpen className="h-5 w-5 text-blue-500" />
+              ) : (
+                <Folder className="h-5 w-5 text-gray-500" />
+              )) : (
+              <File className="ml-5 h-5 w-5 text-gray-500" />
+            )}
+          </div>
+        </td>
+        <td className="px-2 py-2 whitespace-nowrap">
+          <span className={isFolder ? "text-blue-600 font-medium" : "text-gray-800"}>
+            {fileName}
+          </span>
+        </td>
+        {showDateColumn && (
+          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+            {resourceId.substring(0, 8)}...
+          </td>
+        )}
+        <td className="px-4 py-2 whitespace-nowrap">
+          {getStatusBadge()}
+        </td>
+        <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+          <div className="flex justify-end space-x-2">
+            {isIndexed && !isProcessing && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveResource(resourceId);
+                }}
+                className="text-red-600 hover:text-red-800 p-1"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </td>
+      </tr>
+
+      {/* Expanded folder with children */}
+      {isExpanded && (
+        <>
+          {isLoading ? (
+            <tr>
+              <td colSpan={showDateColumn ? 6 : 5}>
+                <div className="flex items-center py-2" style={{ paddingLeft: `${depth * 20 + 48}px` }}>
+                  <RefreshCw className="h-4 w-4 text-blue-500 animate-spin mr-2" />
+                  <span className="text-sm text-gray-500">Loading...</span>
+                </div>
+              </td>
+            </tr>
+          ) : childResources.length > 0 ? (
+            // Render child resources recursively
+            childResources.map(childResource => (
+              <ResourceItem
+                key={childResource.resource_id}
+                resource={childResource}
+                depth={depth + 1}
+                expandedFolders={expandedFolders}
+                setExpandedFolders={setExpandedFolders}
+                selectedResources={selectedResources}
+                setSelectedResources={setSelectedResources}
+                onRemoveResource={onRemoveResource}
+                childResourcesMap={childResourcesMap}
+                setChildResourcesMap={setChildResourcesMap}
+                showDateColumn={showDateColumn}
+                connectionId={connectionId}
+                authToken={authToken}
+                indexingStatus={indexingStatus}
+                setIndexingStatus={setIndexingStatus}
+              />
+            ))
+          ) : (
+            <tr>
+              <td colSpan={showDateColumn ? 6 : 5}>
+                <div className="py-2 text-sm text-gray-500" style={{ paddingLeft: `${depth * 20 + 48}px` }}>
+                  This folder is empty
+                </div>
+              </td>
+            </tr>
+          )}
+        </>
+      )}
+    </>
+  );
+};
+
 export default function FilePicker() {
   const { connectionId, authToken, isLoggedIn } = useAuth();
-  
 
-  // const [resources, setResources] = useState([]);
-  // const [loading, setLoading] = useState(true);
-  const [currentFolder, setCurrentFolder] = useState(undefined);
-  const [breadcrumbPath, setBreadcrumbPath] = useState([{ id: null, name: 'Root' }]);
+  // Root resources state
+  const [expandedFolders, setExpandedFolders] = useState([]);
+  const [selectedResources, setSelectedResources] = useState([]);
+  const [childResourcesMap, setChildResourcesMap] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [indexingStatus, setIndexingStatus] = useState({});
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
   const [showDateColumn, setShowDateColumn] = useState(true);
-  const [fileTypeFilter, setFileTypeFilter] = useState('all'); // 'all', 'documents', 'images', etc.
-  
-  const {setResources, resources, isLoading, error, mutate } = useResources(connectionId, authToken, currentFolder);
 
+  console.log({childResourcesMap})
+
+  // Use the custom hook to fetch root resources
+  const { resources, isLoading, error, mutate } = useResources(connectionId, authToken);
+
+  // KB creation hook
   const { trigger: createKB, data, error: errorKB, isMutating } = useCreateKnowledgeBase();
 
-  const handleKBHandler = async () => {
-    console.log({connectionId, selectedFiles, authToken})
-    const result = await createKB({
-      authToken,
-      body: {
-        connectionId,
-        connectionSourceIds: selectedFiles,
-        name: 'Nueva KB',
-      },
-    });
+  // Extract root resources from the response
+  const rootResources = resources?.resources?.data || [];
 
-  }
-
-
-  const fetchResources = () => mutate(); // revalida los datos desde SWR
-
-  const handleFolderClick = (resource) => {
-    setCurrentFolder(resource.resource_id);
-    
-    // Update breadcrumb
-    const pathParts = resource.inode_path.path.split('/').filter(Boolean);
-    const newPath = [...breadcrumbPath];
-    
-    // If we're not already deeper in the path
-    if (breadcrumbPath.findIndex(item => item.id === resource.resource_id) === -1) {
-      newPath.push({ 
-        id: resource.resource_id, 
-        name: pathParts[pathParts.length - 1] 
-      });
-    }
-    
-    setBreadcrumbPath(newPath);
-  };
-
-  const handleBreadcrumbClick = (item, index) => {
-    setCurrentFolder(item.id);
-    setBreadcrumbPath(breadcrumbPath.slice(0, index + 1));
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
   };
 
   const handleSort = (field) => {
@@ -195,105 +463,86 @@ export default function FilePicker() {
     }
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const toggleFileSelection = (resource: any) => {
-
-    const partentId = resources?.parentId
-    console.log({partentId, selectedFiles, resource})
-
-    const resourceId = resource.resource_id;
-    if(partentId && selectedFiles.includes(partentId)){
-      const newSelectedFiles = selectedFiles.filter(id => id !== partentId);
-      return setSelectedFiles([...newSelectedFiles, resourceId ]);
-    }
-
-    if(selectedFiles.includes(resourceId)){
-      const newSelectedFiles = selectedFiles.filter(id => id !== resourceId);
-      return setSelectedFiles(newSelectedFiles);
-    }
-
-    setSelectedFiles(prev => ([
-      ...prev,
-      resourceId
-    ]));
-  };
-
   const indexSelectedFiles = async () => {
-    const selectedResourceIds = selectedFiles
-  
-    console.log({resources})
-    for (const resourceId of selectedResourceIds) {
-      try {
-        // await api.indexResource(resourceId);
+    if (selectedResources.length === 0) return;
 
-        console.log({ selectedResourceIds, resources: resources?.resources?.data})
+    try {
+      // Mark files as indexing
+      const updatedStatus = {};
+      selectedResources.forEach(id => {
+        updatedStatus[id] = 'indexing';
+      });
 
-        if(!resources) return;
-        
-        // Update resources status
-        setResources({parentId: resources?.parentId, resources: {data: resources.resources.data.map((resource) => 
-          resource.resource_id === resourceId 
-            ? { ...resource, status: 'indexing' } 
-            : resource
-        )}});
+      setIndexingStatus(prev => ({
+        ...prev,
+        ...updatedStatus
+      }));
 
-        // await handleKBHandler()
+      // Create knowledge base
+      await createKB({
+        authToken,
+        body: {
+          connectionId,
+          connectionSourceIds: selectedResources,
+          name: 'Knowledge Base ' + new Date().toLocaleString(),
+        },
+      });
 
+      // Update status to indexed
+      const indexedStatus = {};
+      selectedResources.forEach(id => {
+        indexedStatus[id] = 'indexed';
+      });
 
-        setResources({parentId: resources?.parentId, resources: {data: resources.resources.data.map((resource) => 
-          resource.resource_id === resourceId 
-            ? { ...resource, status: 'indexed' } 
-            : resource
-        )}});
+      setIndexingStatus(prev => ({
+        ...prev,
+        ...indexedStatus
+      }));
 
-        
-      } catch (error) {
-        console.error(`Failed to index resource ${resourceId}:`, error);
-        // Update indexing status to failed
-        setIndexingStatus(prev => ({
-          ...prev,
-          [resourceId]: 'failed'
-        }));
-      }
+      // Refresh resources to get updated status
+      // mutate();
+    } catch (error) {
+      console.error('Error indexing files:', error);
+
+      // Update status to failed
+      const failedStatus = {};
+      selectedResources.forEach(id => {
+        failedStatus[id] = 'failed';
+      });
+
+      setIndexingStatus(prev => ({
+        ...prev,
+        ...failedStatus
+      }));
     }
   };
 
-  const removeResource = async (resourceId) => {
+  const handleRemoveResource = async (resourceId) => {
     try {
-      // Show removing status
+      // Mark as removing
       setIndexingStatus(prev => ({
         ...prev,
         [resourceId]: 'removing'
       }));
-      
-      await api.deleteResource(resourceId);
-      
-      // Update local state to remove the indexed status
-      setResources(resources.map(resource => 
-        resource.resource_id === resourceId 
-          ? { ...resource, status: undefined } 
-          : resource
-      ));
-      
-      // Update selected files state
-      // setSelectedFiles(prev => ({
-      //   ...prev,
-      //   [resourceId]: false
-      // }));
 
-      setSelectedFiles(prev => (prev.filter(id => id !== resourceId)));
-      
+      // Call API to remove resource from index (simulated)
+      await new Promise(r => setTimeout(r, 1000));
+
+      // Remove from selected resources
+      setSelectedResources(prev => prev.filter(id => id !== resourceId));
+
       // Clear indexing status
       setIndexingStatus(prev => {
         const newStatus = { ...prev };
         delete newStatus[resourceId];
         return newStatus;
       });
+
+      // Refresh resources
+      // mutate();
     } catch (error) {
-      console.error(`Failed to remove resource ${resourceId}:`, error);
+      console.error(`Error removing resource ${resourceId}:`, error);
+
       setIndexingStatus(prev => ({
         ...prev,
         [resourceId]: 'failed'
@@ -301,39 +550,19 @@ export default function FilePicker() {
     }
   };
 
-  // Helper function to get file type from path
-  const getFileType = (path) => {
-    const extension = path.split('.').pop().toLowerCase();
-    const documentTypes = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx'];
-    const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'];
-    
-    if (documentTypes.includes(extension)) return 'document';
-    if (imageTypes.includes(extension)) return 'image';
-    return 'other';
-  };
-
-  // Filter resources based on search term and file type filter
-  const filteredResources = resources?.resources ? resources?.resources.data.filter(resource => {
+  // Filter resources by search term
+  const filteredRootResources = rootResources.filter(resource => {
     const path = resource.inode_path.path.toLowerCase();
-    const matchesSearch = path.includes(searchTerm.toLowerCase());
-    
-    // Always show directories regardless of file type filter
-    if (resource.inode_type === 'directory') return matchesSearch;
-    
-    // Apply file type filter for files
-    if (fileTypeFilter === 'all') return matchesSearch;
-    
-    const fileType = getFileType(path);
-    return matchesSearch && fileTypeFilter === fileType;
-  }): [];
+    return path.includes(searchTerm.toLowerCase());
+  });
 
   // Sort resources
-  const sortedResources = [...filteredResources].sort((a, b) => {
+  const sortedRootResources = [...filteredRootResources].sort((a, b) => {
     // First sort by type (directories first)
     if (a.inode_type !== b.inode_type) {
       return a.inode_type === 'directory' ? -1 : 1;
     }
-    
+
     // Then sort by the selected field
     let valA, valB;
     if (sortField === 'name') {
@@ -344,84 +573,43 @@ export default function FilePicker() {
     } else if (sortField === 'status') {
       valA = a.status || '';
       valB = b.status || '';
-    } else if (sortField === 'date') {
-      valA = a.last_modified || '';
-      valB = b.last_modified || '';
     } else {
-      // Add other sort fields here if needed
-      valA = a[sortField];
-      valB = b[sortField];
+      valA = a[sortField] || '';
+      valB = b[sortField] || '';
     }
-    
+
     const comparison = valA > valB ? 1 : -1;
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
-  const getStatusBadge = (resource) => {
-    // First check the processing status
-    if (indexingStatus[resource.resource_id]) {
-      const status = indexingStatus[resource.resource_id];
-      
-      const statusColors = {
-        indexing: "bg-blue-100 text-blue-800",
-        removing: "bg-orange-100 text-orange-800",
-        indexed: "bg-green-100 text-green-800",
-        failed: "bg-red-100 text-red-800"
-      };
-      
-      return (
-        <Badge className={statusColors[status] || ''}>
-          {status === 'indexing' ? 'indexing...' : 
-           status === 'removing' ? 'removing...' : status}
-        </Badge>
-      );
-    }
-    
-    // Then check the resource's status
-    if (!resource.status) return null;
-    
-    const statusColors = {
-      indexed: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      indexing: "bg-blue-100 text-blue-800",
-      failed: "bg-red-100 text-red-800"
-    };
-    
-    return (
-      <Badge className={statusColors[resource.status] || ''}>
-        {resource.status}
-      </Badge>
-    );
-  };
-
-  const getFileName = (path) => {
-    return path.split('/').filter(Boolean).pop() || '';
-  };
-
-  // Format date to readable format
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
-
-  // Select/deselect all files in current view
+  // Select/deselect all root resources
   const toggleSelectAll = () => {
-    const allSelected = filteredResources.every(resource => 
-      selectedFiles[resource.resource_id]
+    const allSelected = rootResources.every(resource =>
+      selectedResources.includes(resource.resource_id)
     );
-    
-    const updatedSelection = { ...selectedFiles };
-    
-    filteredResources.forEach(resource => {
-      updatedSelection[resource.resource_id] = !allSelected;
-    });
-    
-    setSelectedFiles(updatedSelection);
+
+    if (allSelected) {
+      // Deselect all
+      setSelectedResources([]);
+    } else {
+      // Select all root resources and their children
+      const allIds = [];
+
+      // Helper function to collect all resource IDs
+      const collectIds = (resources) => {
+        for (const resource of resources) {
+          allIds.push(resource.resource_id);
+
+          // Include children if it's a folder and we have its children in the map
+          if (resource.inode_type === 'directory' && childResourcesMap[resource.resource_id]) {
+            collectIds(childResourcesMap[resource.resource_id]);
+          }
+        }
+      };
+
+      collectIds(rootResources);
+      setSelectedResources(allIds);
+    }
   };
 
   return (
@@ -430,63 +618,33 @@ export default function FilePicker() {
         <div className="flex items-center justify-between border-b pb-4">
           <h1 className="text-2xl font-bold text-gray-800">Google Drive File Picker</h1>
           <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchResources}
+            <Button
+              variant="outline"
+              size="sm"
+              // onClick={() => mutate()}
               className="flex items-center gap-1"
             >
               <RefreshCw className="h-4 w-4" /> Refresh
             </Button>
-            
+
             <Dropdown
               trigger={
                 <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  <Filter className="h-4 w-4" /> 
+                  <Filter className="h-4 w-4" />
                   Filter
                 </Button>
               }
               items={[
-                { 
-                  label: 'All Files', 
-                  icon: <Tag className="h-4 w-4" />,
-                  onClick: () => setFileTypeFilter('all') 
-                },
-                { 
-                  label: 'Documents', 
-                  icon: <File className="h-4 w-4" />,
-                  onClick: () => setFileTypeFilter('document') 
-                },
-                { 
-                  label: 'Images', 
-                  icon: <File className="h-4 w-4" />,
-                  onClick: () => setFileTypeFilter('image') 
-                },
-                { 
-                  label: 'Show Date', 
+                {
+                  label: 'Show Resource ID',
                   icon: showDateColumn ? <Check className="h-4 w-4" /> : null,
-                  onClick: () => setShowDateColumn(!showDateColumn) 
+                  onClick: () => setShowDateColumn(!showDateColumn)
                 }
               ]}
             />
           </div>
         </div>
-        
-        {/* Breadcrumb navigation */}
-        <div className="flex items-center text-sm text-gray-600 py-2 bg-gray-50 rounded px-3 overflow-x-auto">
-          {breadcrumbPath.map((item, index) => (
-            <React.Fragment key={index}>
-              {index > 0 && <ChevronRight className="h-4 w-4 mx-1 text-gray-400 flex-shrink-0" />}
-              <span 
-                className={`${index < breadcrumbPath.length - 1 ? 'hover:text-blue-600 cursor-pointer' : 'font-medium text-blue-600'} whitespace-nowrap`}
-                onClick={() => index < breadcrumbPath.length - 1 && handleBreadcrumbClick(item, index)}
-              >
-                {item.name}
-              </span>
-            </React.Fragment>
-          ))}
-        </div>
-        
+
         {/* Search and actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="relative w-full sm:w-auto sm:flex-grow max-w-md">
@@ -498,65 +656,19 @@ export default function FilePicker() {
               className="pl-8 w-full"
             />
           </div>
-          
+
           <div className="flex space-x-2 w-full sm:w-auto">
-          <Button 
+            <Button
               onClick={indexSelectedFiles}
               variant="primary"
+              disabled={selectedResources.length === 0}
               className="flex items-center gap-1 w-full sm:w-auto"
-              // disabled={!Object.keys(selectedFiles).some(id => selectedFiles[id] && isLoading && !resources.find(r => r.resource_id === id)?.status)}
             >
-              <RefreshCw className="h-4 w-4" /> Sync
-            </Button>
-            <Button 
-              onClick={indexSelectedFiles}
-              variant="primary"
-              className="flex items-center gap-1 w-full sm:w-auto"
-              // disabled={!Object.keys(selectedFiles).some(id => selectedFiles[id] && isLoading && !resources.find(r => r.resource_id === id)?.status)}
-            >
-              <Plus className="h-4 w-4" /> Index Selected
+              <Plus className="h-4 w-4" /> Index Selected ({selectedResources.length})
             </Button>
           </div>
         </div>
-        
-        {/* Sort controls */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center text-sm text-gray-500">
-            <span>Sort by:</span>
-            <button 
-              className={`ml-2 flex items-center px-2 py-1 rounded ${sortField === 'name' ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'}`}
-              onClick={() => handleSort('name')}
-            >
-              Name
-              {sortField === 'name' && (
-                sortDirection === 'asc' ? <SortAsc className="ml-1 h-3 w-3" /> : <SortDesc className="ml-1 h-3 w-3" />
-              )}
-            </button>
-            <button 
-              className={`ml-2 flex items-center px-2 py-1 rounded ${sortField === 'status' ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'}`}
-              onClick={() => handleSort('status')}
-            >
-              Status
-              {sortField === 'status' && (
-                sortDirection === 'asc' ? <SortAsc className="ml-1 h-3 w-3" /> : <SortDesc className="ml-1 h-3 w-3" />
-              )}
-            </button>
-            <button 
-              className={`ml-2 flex items-center px-2 py-1 rounded ${sortField === 'date' ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'}`}
-              onClick={() => handleSort('date')}
-            >
-              Date
-              {sortField === 'date' && (
-                sortDirection === 'asc' ? <SortAsc className="ml-1 h-3 w-3" /> : <SortDesc className="ml-1 h-3 w-3" />
-              )}
-            </button>
-          </div>
-          
-          <div className="text-sm text-gray-500">
-            {filteredResources.length} items
-          </div>
-        </div>
-        
+
         {/* Files table */}
         <div className="border rounded-md overflow-hidden">
           <div className="overflow-x-auto">
@@ -567,43 +679,43 @@ export default function FilePicker() {
                     <input
                       type="checkbox"
                       className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      checked={filteredResources.length > 0 && filteredResources.every(resource => selectedFiles[resource.resource_id])}
+                      checked={
+                        rootResources.length > 0 &&
+                        rootResources.every(r => selectedResources.includes(r.resource_id))
+                      }
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                     Type
                   </th>
-                  <th 
-                    scope="col" 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('name')}
                   >
                     <div className="flex items-center">
                       Name
-                      <ArrowUpDown className="ml-1 h-4 w-4" />
+                      {sortField === 'name' && (
+                        <ArrowUpDown className="ml-1 h-4 w-4" />
+                      )}
                     </div>
                   </th>
                   {showDateColumn && (
-                    <th 
-                      scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      onClick={() => handleSort('date')}
-                    >
-                      <div className="flex items-center">
-                        Resource_id
-                        <ArrowUpDown className="ml-1 h-4 w-4" />
-                      </div>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Resource ID
                     </th>
                   )}
-                  <th 
-                    scope="col" 
+                  <th
+                    scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center">
                       Status
-                      <ArrowUpDown className="ml-1 h-4 w-4" />
+                      {sortField === 'status' && (
+                        <ArrowUpDown className="ml-1 h-4 w-4" />
+                      )}
                     </div>
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -613,16 +725,16 @@ export default function FilePicker() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {isLoading ? (
-                  // Loading skeletons
+                  // Loading skeleton
                   Array(5).fill(0).map((_, i) => (
                     <tr key={i}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Skeleton className="h-4 w-4" />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Skeleton className="h-4 w-4" />
+                      <td className="px-3 py-4 whitespace-nowrap">
+                        <Skeleton className="h-5 w-5" />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-4 whitespace-nowrap">
                         <Skeleton className="h-4 w-32" />
                       </td>
                       {showDateColumn && (
@@ -634,97 +746,36 @@ export default function FilePicker() {
                         <Skeleton className="h-4 w-16" />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <Skeleton className="h-4 w-16 ml-auto" />
+                        <Skeleton className="h-4 w-8 ml-auto" />
                       </td>
                     </tr>
                   ))
-                ) : sortedResources.length > 0 ? (
-                  sortedResources.map((resource) => {
-                    const isFolder = resource.inode_type === 'directory';
-                    const fileName = getFileName(resource.inode_path.path);
-                    const isIndexed = resource.status === 'indexed';
-                    const isPending = resource.status === 'pending' || indexingStatus[resource.resource_id] === 'indexing';
-                    const isRemoving = indexingStatus[resource.resource_id] === 'removing';
-                    
-                    return (
-                      <tr key={resource.resource_id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            checked={selectedFiles.includes(resource.resource_id)}
-                            onChange={() => toggleFileSelection(resource)}
-                            disabled={isRemoving}
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {isFolder ? (
-                            <Folder className="h-5 w-5 text-blue-500" />
-                          ) : (
-                            <File className="h-5 w-5 text-gray-500" />
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div 
-                            className={`${isFolder ? "cursor-pointer text-blue-600 font-medium hover:underline" : "text-gray-800"}`}
-                            onClick={() => isFolder && handleFolderClick(resource)}
-                          >
-                            {fileName}
-                          </div>
-                        </td>
-                        {showDateColumn && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {resource.resource_id}
-                          </td>
-                        )}
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(resource)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
-                            {/* {!isIndexed && !isPending && !isRemoving && (
-                              <Tooltip content="Add to index">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    toggleFileSelection(resource.resource_id);
-                                    // Set selected to true (for immediate UI feedback)
-                                    setSelectedFiles(prev => ([
-                                      ...prev,
-                                      resource.resource_id
-                                    ]));
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </Tooltip>
-                            )} */}
-                            
-                            {isIndexed && !isRemoving && (
-                              <Tooltip content="Remove from index">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeResource(resource)}
-                                  className="text-red-600 hover:text-red-800"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </Tooltip>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                ) : sortedRootResources.length > 0 ? (
+                  // Root resources with hierarchical children
+                  sortedRootResources.map(resource => (
+                    <ResourceItem
+                      key={resource.resource_id}
+                      resource={resource}
+                      depth={0}
+                      expandedFolders={expandedFolders}
+                      setExpandedFolders={setExpandedFolders}
+                      selectedResources={selectedResources}
+                      setSelectedResources={setSelectedResources}
+                      onRemoveResource={handleRemoveResource}
+                      childResourcesMap={childResourcesMap}
+                      setChildResourcesMap={setChildResourcesMap}
+                      showDateColumn={showDateColumn}
+                      connectionId={connectionId}
+                      authToken={authToken}
+                      indexingStatus={indexingStatus}
+                      setIndexingStatus={setIndexingStatus}
+                    />
+                  ))
                 ) : (
+                  // Empty state
                   <tr>
                     <td colSpan={showDateColumn ? 6 : 5} className="px-6 py-8 text-center text-gray-500">
-                      {searchTerm ? "No matching files or folders found." : 
-                       fileTypeFilter !== 'all' ? "No matching files of the selected type." : 
-                       "This folder is empty."}
+                      {searchTerm ? "No matching files or folders found." : "No files or folders available."}
                     </td>
                   </tr>
                 )}
@@ -732,19 +783,18 @@ export default function FilePicker() {
             </table>
           </div>
         </div>
-        
+
         {/* Selected files indicator */}
-        {Object.values(selectedFiles).some(Boolean) && (
+        {selectedResources.length > 0 && (
           <div className="flex justify-between items-center bg-blue-50 p-3 rounded-md border border-blue-200">
             <span className="text-sm text-blue-800">
-              {selectedFiles.length} file(s) selected
+              {selectedResources.length} file(s) selected
             </span>
             <div className="flex space-x-2">
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setSelectedFiles([])}
-                className="flex items-center gap-1"
+                onClick={() => setSelectedResources([])}
               >
                 Clear selection
               </Button>
@@ -752,7 +802,6 @@ export default function FilePicker() {
                 size="sm"
                 variant="primary"
                 onClick={indexSelectedFiles}
-                // disabled={!Object.keys(selectedFiles).some(id => selectedFiles[id] && isLoading  && !resources.find(r => r.resource_id === id)?.status)}
                 className="flex items-center gap-1"
               >
                 <Plus className="h-4 w-4" /> Index Selected
@@ -760,7 +809,6 @@ export default function FilePicker() {
             </div>
           </div>
         )}
-        
         {/* File indexing progress indicator (shown when files are being indexed) */}
         {Object.values(indexingStatus).some(status => status === 'indexing') && (
           <div className="mt-4 bg-blue-50 p-3 rounded-md border border-blue-200">

@@ -17,7 +17,6 @@ export const useResources = (connectionId: string, authToken: string, resourceId
   
   const [resources, setResources] = useState<ResourceResponse | null>(null)
 
-
   const url = connectionId
     ? resourceId
       ? `/api/connections/${connectionId}/resources/children?resource_id=${resourceId}`
@@ -31,7 +30,6 @@ export const useResources = (connectionId: string, authToken: string, resourceId
 
   useEffect(() => {
     if (data?.resources) {
-      console.log('Resources:', data);
       setResources(data);
     }
   }, [data]);
