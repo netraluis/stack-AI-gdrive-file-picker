@@ -7,9 +7,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { knowledgeBaseId: string; orgId: string } }
 ) {
-  console.log('Triggering knowledge base sync...');
+
   try {
-    const { knowledgeBaseId, orgId } = params;
+    const { knowledgeBaseId, orgId } = await params;
     const authToken = request.headers.get('Authorization');
     
     if (!authToken) {
@@ -23,7 +23,6 @@ export async function GET(
     
     // Trigger the knowledge base synchronization
     const url = `${process.env.API_BASE_URL || 'https://api.stack-ai.com'}/knowledge_bases/sync/trigger/${knowledgeBaseId}/${orgId}`;
-    console.log('API URL:', url);
     const result = await apiSession.get(url);
     
     return NextResponse.json({

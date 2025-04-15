@@ -7,7 +7,7 @@ export async function DELETE(
   { params }: { params: { knowledgeBaseId: string } }
 ) {
   try {
-    const { knowledgeBaseId } = params;
+    const { knowledgeBaseId } = await params;
     const authToken = request.headers.get('Authorization');
     
     if (!authToken) {
@@ -17,7 +17,6 @@ export async function DELETE(
       );
     }
     
-    // Get resource path from query params
     const searchParams = request.nextUrl.searchParams;
     const resourcePath = searchParams.get('resource_path');
     
@@ -29,7 +28,6 @@ export async function DELETE(
     }
     
     const apiSession = createApiSession({ Authorization: authToken });
-    
     // Delete the resource from the knowledge base
     const url = `${process.env.API_BASE_URL || 'https://api.stack-ai.com'}/knowledge_bases/${knowledgeBaseId}/resources?resource_path=${encodeURIComponent(resourcePath)}`;
     await apiSession.delete(url);

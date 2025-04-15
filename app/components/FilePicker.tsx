@@ -1,9 +1,11 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
-import { Folder, File, ChevronRight, ChevronDown, Search, ArrowUp, Trash2, Check, RefreshCw, Plus, ArrowUpDown, Calendar, SortAsc, SortDesc, Filter, Tag, FolderOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Folder, File, ChevronRight, ChevronDown, Search, Trash2, Check, RefreshCw, Plus, ArrowUpDown, Filter, FolderOpen } from 'lucide-react';
 import { useAuth } from '../context/authContext';
 import { useResources } from '../hooks/useResources';
 import { useCreateKnowledgeBase } from '../hooks/useKnowledgeBase';
+import { useTriggerSync } from '../hooks/useTriggerSync';
+import { useDeleteKnowledgeBaseResource, useKnowledgeBaseResources } from '../hooks/useKnowledgeBaseResources';
 
 // Custom UI components
 const Button = ({ children, onClick, variant = "primary", disabled = false, className = "", size = "md" }) => {
@@ -151,6 +153,7 @@ const ResourceItem = ({
   const fileName = resource.inode_path.path.split('/').filter(Boolean).pop() || '';
   const isIndexed = resource.status === 'indexed';
   const isPending = resource.status === 'pending';
+  const isSybchronized = resource.status === 'Synchronized';
   const isProcessing = indexingStatus[resourceId] === 'indexing' || indexingStatus[resourceId] === 'removing';
   const [getData, setGetData] = useState(false);
 
@@ -168,7 +171,6 @@ const ResourceItem = ({
 
   useEffect(() => {
     if (!childResourcesMap[resourceId] || childResourcesMap[resourceId].length === 0) {
-
       const children = resources?.resources?.data || [];
       setChildResourcesMap(prev => ({
         ...prev,
@@ -177,8 +179,24 @@ const ResourceItem = ({
     }
   }, [resources]);
 
+
+  useEffect(() => {
+    // Cuando se deselecciona un padre, deseleccionar todos los hijos
+    if (!isSelected && isFolder) {
+      deselectAllChildren(resourceId);
+    }
+  }, [isSelected]);
+
   // Get child resources if they exist in the map
   const childResources = childResourcesMap[resourceId] || [];
+
+  useEffect(() => {
+    // Cuando se cargan nuevos hijos y el padre está seleccionado
+    if (isSelected && isFolder && childResources.length > 0) {
+      // Seleccionar automáticamente todos los hijos recién cargados
+      selectAllChildren(resourceId);
+    }
+  }, [childResources.length]);
 
   // Check if all children are selected (for indeterminate state)
   const hasChildren = childResources.length > 0;
@@ -219,50 +237,87 @@ const ResourceItem = ({
       if (isFolder) {
         deselectAllChildren(resourceId);
       }
+
+      // Si tiene padre, actualizar el estado del padre
+      if (resource.parent_id) {
+        // Desmarcar el padre ya que ahora hay al menos un hijo desmarcado
+        setSelectedResources(prev => prev.filter(id => id !== resource.parent_id));
+      }
     } else {
+      // Select this resource
       setSelectedResources(prev => [...prev, resourceId]);
 
-      // If it's a folder, also select all children recursively
+      // If it's a folder, mark all its children as selected
       if (isFolder) {
-        selectAllChildren(resourceId);
+        // Si ya hay hijos cargados, seleccionarlos
+        if (childResources.length > 0) {
+          selectAllChildren(resourceId);
+        }
+        // Si no hay hijos cargados, serán seleccionados cuando se carguen
+      }
+
+      // Si tiene padre, verificar si todos los hermanos están seleccionados
+      if (resource.parent_id) {
+        const siblings = childResourcesMap[resource.parent_id] || [];
+        const allSiblingsSelected = siblings.every(sibling =>
+          selectedResources.includes(sibling.resource_id) || sibling.resource_id === resourceId
+        );
+
+        // Si todos los hermanos están seleccionados, seleccionar también al padre
+        if (allSiblingsSelected) {
+          setSelectedResources(prev => [...prev, resource.parent_id]);
+        }
       }
     }
   };
 
   const selectAllChildren = (folderId) => {
-    // console.log('selectAllChildren', { folderId, childResourcesMap });
-    // setExpandedFolders(prev => [...prev, resourceId]);
-    const children = childResourcesMap[folderId] || [];
+    setSelectedResources(prev => {
+      const newSelection = [...prev];
 
-    for (const child of children) {
-      const childId = child.resource_id;
+      // Añadir todos los hijos conocidos recursivamente
+      const addChildren = (parentId) => {
+        const children = childResourcesMap[parentId] || [];
 
-      // Add child to selected resources if not already selected
-      if (!selectedResources.includes(childId)) {
-        setSelectedResources(prev => [...prev, childId]);
-      }
+        for (const child of children) {
+          if (!newSelection.includes(child.resource_id)) {
+            newSelection.push(child.resource_id);
+          }
 
-      // If child is a folder, recursively select its children
-      if (child.inode_type === 'directory') {
-        selectAllChildren(childId);
-      }
-    }
+          // Si este hijo es una carpeta, añadir sus hijos también
+          if (child.inode_type === 'directory') {
+            addChildren(child.resource_id);
+          }
+        }
+      };
+
+      addChildren(folderId);
+      return newSelection;
+    });
   };
 
+
   const deselectAllChildren = (folderId) => {
-    const children = childResourcesMap[folderId] || [];
+    setSelectedResources(prev => {
+      let newSelection = [...prev];
 
-    for (const child of children) {
-      const childId = child.resource_id;
+      // Eliminar todos los hijos conocidos recursivamente
+      const removeChildren = (parentId) => {
+        const children = childResourcesMap[parentId] || [];
 
-      // Remove child from selected resources
-      setSelectedResources(prev => prev.filter(id => id !== childId));
+        for (const child of children) {
+          newSelection = newSelection.filter(id => id !== child.resource_id);
 
-      // If child is a folder, recursively deselect its children
-      if (child.inode_type === 'directory') {
-        deselectAllChildren(childId);
-      }
-    }
+          // Si este hijo es una carpeta, eliminar sus hijos también
+          if (child.inode_type === 'directory') {
+            removeChildren(child.resource_id);
+          }
+        }
+      };
+
+      removeChildren(folderId);
+      return newSelection;
+    });
   };
 
   const getStatusBadge = () => {
@@ -311,7 +366,7 @@ const ResourceItem = ({
         style={{ cursor: isFolder ? 'pointer' : 'default' }}
       >
         <td className="whitespace-nowrap">
-          <div className="flex items-center py-2" style={{ paddingLeft: `${16 }px` }}>
+          <div className="flex items-center py-2" style={{ paddingLeft: `${16}px` }}>
             <div className="relative flex items-center">
               <input
                 type="checkbox"
@@ -320,6 +375,12 @@ const ResourceItem = ({
                 onChange={toggleSelection}
                 disabled={isProcessing}
                 onClick={(e) => e.stopPropagation()}
+                data-resource-id={resourceId}
+                ref={input => {
+                  if (input && isIndeterminate) {
+                    input.indeterminate = true;
+                  }
+                }}
               />
               {/* {isIndeterminate && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -361,12 +422,12 @@ const ResourceItem = ({
         </td>
         <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
           <div className="flex justify-end space-x-2">
-            {isIndexed && !isProcessing && (
+            {indexingStatus[resourceId] === 'Synchronized' && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onRemoveResource(resourceId);
+                  onRemoveResource(resource);
                 }}
                 className="text-red-600 hover:text-red-800 p-1"
               >
@@ -426,7 +487,7 @@ const ResourceItem = ({
 };
 
 export default function FilePicker() {
-  const { connectionId, authToken, isLoggedIn } = useAuth();
+  const { connectionId, authToken, isLoggedIn, orgId } = useAuth();
 
   // Root resources state
   const [expandedFolders, setExpandedFolders] = useState([]);
@@ -438,14 +499,49 @@ export default function FilePicker() {
   const [indexingStatus, setIndexingStatus] = useState({});
   const [showDateColumn, setShowDateColumn] = useState(true);
 
-  console.log({childResourcesMap})
+
+
 
   // Use the custom hook to fetch root resources
   const { resources, isLoading, error, mutate } = useResources(connectionId, authToken);
 
   // KB creation hook
-  const { trigger: createKB, data, error: errorKB, isMutating } = useCreateKnowledgeBase();
+  const { trigger: createKB, data: dataKB, error: errorKB, isMutating } = useCreateKnowledgeBase();
 
+  const { trigger: sync, data: syncData, error: triggerError } = useTriggerSync(orgId, dataKB?.knowledgeBase?.knowledge_base_id);
+
+  const { data: KBResourcesData, error: KBResourcesError, isLoading: KBResourcesIsLoading, mutate: KBResourcesMutate } = useKnowledgeBaseResources(dataKB?.knowledgeBase?.knowledge_base_id, authToken);
+
+  const { trigger: deleteKB, isMutating: isMutatingDeleteKB, error: errorDeleteKb } = useDeleteKnowledgeBaseResource(dataKB?.knowledgeBase?.knowledge_base_id);
+  // const { data: KBResourcesData, error: KBResourcesError, isLoading: KBResourcesIsLoading, mutate: KBResourcesMutate } = useKnowledgeBaseResources('58aaac70-0c25-4049-8241-358a4868a567', authToken);
+
+
+
+  useEffect(() => {
+
+    if (KBResourcesData && KBResourcesData?.resources?.data) {
+      console.log('KBResourcesData', KBResourcesData?.resources?.data);
+      // Update status to indexed
+      const indexedStatus = {};
+      selectedResources.forEach(id => {
+        console.log('entro', KBResourcesData?.resources?.data)
+        if (indexedStatus[id] !== 'Synchronized' && KBResourcesData?.resources?.data?.some(resource => resource.resource_id === id)) {
+          indexedStatus[id] = 'Synchronized';
+        }
+      });
+
+      setIndexingStatus(prev => ({
+        ...prev,
+        ...indexedStatus
+      }));
+    }
+  }, [KBResourcesData, KBResourcesError]);
+
+  useEffect(() => {
+    if (dataKB?.knowledgeBase?.knowledge_base_id) {
+      syncIndexedFiles();
+    }
+  }, [dataKB]);
   // Extract root resources from the response
   const rootResources = resources?.resources?.data || [];
 
@@ -453,7 +549,7 @@ export default function FilePicker() {
     setSearchTerm(e.target.value);
   };
 
-  const handleSort = (field) => {
+  const handleSort = (field: string) => {
     if (sortField === field) {
       // Toggle direction
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -467,6 +563,14 @@ export default function FilePicker() {
     if (selectedResources.length === 0) return;
 
     try {
+      // Obtener solo los IDs de archivos (no carpetas)
+      const leafResourceIds = getLeafNodeResourceIds();
+
+      if (leafResourceIds.length === 0) {
+        console.warn('No files selected for indexing');
+        return;
+      }
+
       // Mark files as indexing
       const updatedStatus = {};
       selectedResources.forEach(id => {
@@ -478,15 +582,20 @@ export default function FilePicker() {
         ...updatedStatus
       }));
 
-      // Create knowledge base
+      console.log('Indexing files:', leafResourceIds);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Create knowledge base using only leaf node IDs
       await createKB({
         authToken,
         body: {
           connectionId,
-          connectionSourceIds: selectedResources,
+          connectionSourceIds: leafResourceIds,
           name: 'Knowledge Base ' + new Date().toLocaleString(),
         },
       });
+
+      console.log('Knowledge base created:');
+
 
       // Update status to indexed
       const indexedStatus = {};
@@ -498,9 +607,6 @@ export default function FilePicker() {
         ...prev,
         ...indexedStatus
       }));
-
-      // Refresh resources to get updated status
-      // mutate();
     } catch (error) {
       console.error('Error indexing files:', error);
 
@@ -517,7 +623,70 @@ export default function FilePicker() {
     }
   };
 
-  const handleRemoveResource = async (resourceId) => {
+  const syncIndexedFiles = async () => {
+    if (selectedResources.length === 0) return;
+
+    try {
+
+      // Mark files as indexing
+      const updatedStatus = {};
+      selectedResources.forEach(id => {
+        if (updatedStatus[id] === 'indexed') {
+          updatedStatus[id] = 'Synchronizing';
+        }
+      });
+
+      setIndexingStatus(prev => ({
+        ...prev,
+        ...updatedStatus
+      }));
+
+      // console.log('Indexing files:', leafResourceIds);
+      // await new Promise(resolve => setTimeout(resolve, 3000));
+      // // Create knowledge base using only leaf node IDs
+      // await createKB({
+      //   authToken,
+      //   body: {
+      //     connectionId,
+      //     connectionSourceIds: leafResourceIds,
+      //     name: 'Knowledge Base ' + new Date().toLocaleString(),
+      //   },
+      // });
+
+      await sync({ authToken })
+
+      console.log('sync base created:');
+
+
+      // Update status to indexed
+      // const indexedStatus = {};
+      // selectedResources.forEach(id => {
+      //   indexedStatus[id] = 'Synchronized';
+      // });
+
+      // setIndexingStatus(prev => ({
+      //   ...prev,
+      //   ...indexedStatus
+      // }));
+    } catch (error) {
+      console.error('Error indexing files:', error);
+
+      // Update status to failed
+      const failedStatus = {};
+      selectedResources.forEach(id => {
+        failedStatus[id] = 'failed';
+      });
+
+      setIndexingStatus(prev => ({
+        ...prev,
+        ...failedStatus
+      }));
+    }
+  };
+
+  const handleRemoveResource = async (resource: any) => {
+    console.log({ resource, inode_path: resource.inode_path.path });
+    const resourceId = resource.resource_id;
     try {
       // Mark as removing
       setIndexingStatus(prev => ({
@@ -526,10 +695,15 @@ export default function FilePicker() {
       }));
 
       // Call API to remove resource from index (simulated)
-      await new Promise(r => setTimeout(r, 1000));
+      // AQUI await new Promise(r => setTimeout(r, 1000));
 
       // Remove from selected resources
       setSelectedResources(prev => prev.filter(id => id !== resourceId));
+
+      await deleteKB({
+        resourcePath: resource.inode_path.path,
+        token: authToken,
+      });
 
       // Clear indexing status
       setIndexingStatus(prev => {
@@ -548,6 +722,33 @@ export default function FilePicker() {
         [resourceId]: 'failed'
       }));
     }
+  };
+
+  const getLeafNodeResourceIds = () => {
+    // Resultado final: IDs de recursos de último nivel
+    const result: string[] = [];
+    // Mantener un registro de qué IDs son padres de otros IDs seleccionados
+    const parentIds = new Set();
+
+    // Identificar todos los recursos que son padres de otros recursos seleccionados
+    selectedResources.forEach(id => {
+      const children = childResourcesMap[id] || [];
+      children.forEach(child => {
+        if (selectedResources.includes(child.resource_id)) {
+          // Este recurso es padre de otro recurso seleccionado
+          parentIds.add(id);
+        }
+      });
+    });
+
+    // Los recursos de último nivel son los seleccionados que NO son padres
+    selectedResources.forEach(id => {
+      if (!parentIds.has(id)) {
+        result.push(id);
+      }
+    });
+
+    return result;
   };
 
   // Filter resources by search term
@@ -582,35 +783,6 @@ export default function FilePicker() {
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
-  // Select/deselect all root resources
-  const toggleSelectAll = () => {
-    const allSelected = rootResources.every(resource =>
-      selectedResources.includes(resource.resource_id)
-    );
-
-    if (allSelected) {
-      // Deselect all
-      setSelectedResources([]);
-    } else {
-      // Select all root resources and their children
-      const allIds = [];
-
-      // Helper function to collect all resource IDs
-      const collectIds = (resources) => {
-        for (const resource of resources) {
-          allIds.push(resource.resource_id);
-
-          // Include children if it's a folder and we have its children in the map
-          if (resource.inode_type === 'directory' && childResourcesMap[resource.resource_id]) {
-            collectIds(childResourcesMap[resource.resource_id]);
-          }
-        }
-      };
-
-      collectIds(rootResources);
-      setSelectedResources(allIds);
-    }
-  };
 
   return (
     <div className="container mx-auto p-4 max-w-6xl bg-white shadow-lg rounded-lg">
@@ -664,6 +836,14 @@ export default function FilePicker() {
               disabled={selectedResources.length === 0}
               className="flex items-center gap-1 w-full sm:w-auto"
             >
+              <RefreshCw className="h-4 w-4" /> Sync
+            </Button>
+            <Button
+              onClick={indexSelectedFiles}
+              variant="primary"
+              disabled={selectedResources.length === 0}
+              className="flex items-center gap-1 w-full sm:w-auto"
+            >
               <Plus className="h-4 w-4" /> Index Selected ({selectedResources.length})
             </Button>
           </div>
@@ -676,7 +856,7 @@ export default function FilePicker() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    <input
+                    {/* <input
                       type="checkbox"
                       className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       checked={
@@ -684,7 +864,7 @@ export default function FilePicker() {
                         rootResources.every(r => selectedResources.includes(r.resource_id))
                       }
                       onChange={toggleSelectAll}
-                    />
+                    /> */}
                   </th>
                   <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                     Type

@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { connectionId: string } }
 ) {
   try {
-    const { connectionId } = params;
+    const { connectionId } = await params;
     const authToken = request.headers.get('Authorization');
     
     if (!authToken) {
@@ -30,17 +30,6 @@ export async function GET(
       : baseUrl;
     
     const resources = await apiSession.get(url);
-
-    // Test purpose
-    // console.log('Resources:', resources);
-    // for (const resource of resources.data) {
-    //   // Convert the resource ID to a string if it's a number
-    //   console.log('API Session:', resource, `${process.env.API_BASE_URL || 'https://api.stack-ai.com'}/connections/${connectionId}/resources?resource_id=${encodeURIComponent(resource.resource_id)}`);
-    //   const url = `${process.env.API_BASE_URL || 'https://api.stack-ai.com'}/connections/${connectionId}/resources?resource_id=${encodeURIComponent(resource.resource_id)}`;
-    //   const response = await apiSession.get(url);
-    //   console.log('Response:', response);
-    // }
-    // Test purpose
 
 
     return NextResponse.json({ 

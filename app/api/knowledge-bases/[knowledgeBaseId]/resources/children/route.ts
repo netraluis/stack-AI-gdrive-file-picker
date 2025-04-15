@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { knowledgeBaseId: string } }
 ) {
   try {
-    const { knowledgeBaseId } = params;
+    const { knowledgeBaseId } = await params;
     const authToken = request.headers.get('Authorization');
     
     if (!authToken) {
@@ -23,11 +23,9 @@ export async function GET(
     const resourcePath = searchParams.get('resource_path') || '/';
     
     const apiSession = createApiSession({ Authorization: authToken });
-    
     // Get resources in the knowledge base
     const url = `${process.env.API_BASE_URL || 'https://api.stack-ai.com'}/knowledge_bases/${knowledgeBaseId}/resources/children?resource_path=${encodeURIComponent(resourcePath)}`;
     const resources = await apiSession.get(url);
-    
     return NextResponse.json({
       resources,
       currentPath: resourcePath

@@ -15,7 +15,6 @@ const createKnowledgeBase = async (
     };
   }
 ) => {
-  console.log({arg})
   const res = await fetch(url, {
     method: "POST",
     headers: {

@@ -114,7 +114,9 @@ export function createApiSession(authHeaders: AuthHeaders): ApiSession {
         throw new Error(`API DELETE request failed: ${response.status} ${response.statusText}`);
       }
       
-      return response.json();
+      // return response.json();
+      // Assuming the DELETE request returns a success message because it gives me an error if I try to parse it
+      return 
     }
   };
 }
