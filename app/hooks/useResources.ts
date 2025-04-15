@@ -13,7 +13,7 @@ const fetcher = (url: string, token: string) =>
     return res.json();
   });
 
-export const useResources = (connectionId: string, authToken: string, resourceId?: string) => {
+export const useResources = (connectionId: string | null, authToken: string, resourceId?: string) => {
   
   const [resources, setResources] = useState<ResourceResponse | null>(null)
 

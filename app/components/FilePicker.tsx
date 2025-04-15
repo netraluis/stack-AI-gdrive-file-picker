@@ -137,9 +137,6 @@ const ResourceItem = ({
   const isExpanded = expandedFolders.includes(resourceId);
   const isSelected = selectedResources.includes(resourceId);
   const fileName = resource.inode_path.path.split('/').filter(Boolean).pop() || '';
-  const isIndexed = resource.status === 'indexed';
-  const isPending = resource.status === 'pending';
-  const isSybchronized = resource.status === 'Synchronized';
   const isProcessing = indexingStatus[resourceId] === 'indexing' || indexingStatus[resourceId] === 'removing';
   const [getData, setGetData] = useState(false);
 
