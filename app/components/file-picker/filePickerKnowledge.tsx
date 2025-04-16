@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { 
-  RefreshCw, 
-  Plus, 
   Filter, 
   PanelLeftClose, 
   Menu, 
   LogOut, 
   Check 
 } from "lucide-react"
+import Image from "next/image"
 
 import { toast } from "sonner"
 
@@ -69,7 +68,6 @@ export default function FilePickerKnowledge() {
     resources, 
     isLoading, 
     error, 
-    mutate 
   } = useResources(connectionId, authToken)
 
   // Knowledge base hooks
@@ -382,9 +380,11 @@ export default function FilePickerKnowledge() {
             <div className="p-4 flex items-center justify-between border-b shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-full h-8 flex items-center px-2">
-                  <img 
+                  <Image 
                     src="/stack-ai.svg" 
                     alt="Stack AI Logo" 
+                    width={32}
+                    height={32}
                     className="h-full w-auto"
                   />
                 </div>
@@ -410,6 +410,14 @@ export default function FilePickerKnowledge() {
               <Button variant="outline" size="sm" className="w-full" onClick={resetAllStates}>
                 {kbExists ? "Reset KB" : "Create New KB"}
               </Button>
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground truncate">{email}</span>
+                  <Button onClick={logout} variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -428,14 +436,6 @@ export default function FilePickerKnowledge() {
               <CardTitle>Google Drive File Picker</CardTitle>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="flex items-center mr-4">
-                <span className="text-sm text-muted-foreground mr-2">{email}</span>
-                <Button onClick={logout} variant="outline" size="sm">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </Button>
-              </div>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center gap-1">
