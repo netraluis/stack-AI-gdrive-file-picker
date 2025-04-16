@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
-import { ArrowUpDown, RefreshCw } from "lucide-react"
+import { ArrowUpDown } from "lucide-react"
 import { Resource } from "@/app/lib/connectionsApi"
 import { ResourceChildrenMap, ResourceState } from "@/app/types/resourcesTypes"
 import { TableSkeleton } from "./tableSkeleton"
