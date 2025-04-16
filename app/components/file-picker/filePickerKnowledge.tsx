@@ -161,7 +161,9 @@ export default function FilePickerKnowledge() {
   }, [errorKB])
 
   // Extract root resources from the response
-  const rootResources = resources?.resources?.data || []
+  const rootResources = kbExists && KBResourcesData?.resources?.data && hasSynced
+    ? KBResourcesData.resources.data 
+    : resources?.resources?.data || []
 
 
   // Index selected files
@@ -352,6 +354,20 @@ export default function FilePickerKnowledge() {
     }
   }
 
+  const handleKBChange = async (kbId: string) => {
+    // Reset states when switching KB
+    setSelectedResources([])
+    setSearchTerm("")
+    setHasSynced(false)
+    
+    // Switch to the new KB
+    switchToKnowledgeBase(kbId)
+    
+    // Force refresh KB resources and wait for it to complete
+    await KBResourcesMutate()
+    setHasSynced(true)
+  }
+
   return (
     <div className="fixed inset-0 flex w-full h-screen overflow-hidden">
       {/* Sidebar */}
@@ -372,7 +388,7 @@ export default function FilePickerKnowledge() {
             <div className="flex-1 overflow-hidden">
               <KnowledgeBaseHistorySidebar
                 knowledgeBaseHistory={knowledgeBaseHistory}
-                switchToKnowledgeBase={switchToKnowledgeBase}
+                switchToKnowledgeBase={handleKBChange}
                 removeFromHistory={removeFromHistory}
               />
             </div>

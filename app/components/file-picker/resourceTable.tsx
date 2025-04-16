@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
-import { ArrowUpDown } from "lucide-react"
+import { ArrowUpDown, RefreshCw } from "lucide-react"
 import { Resource } from "@/app/lib/connectionsApi"
 import { ResourceChildrenMap, ResourceState } from "@/app/types/resourcesTypes"
 import { TableSkeleton } from "./tableSkeleton"
@@ -164,8 +164,21 @@ export function ResourceTable({
             ) : (
               // Empty state
               <TableRow>
-                <TableCell colSpan={showDateColumn ? 6 : 5} className="text-center py-8 text-muted-foreground">
-                  {searchTerm ? "No matching files or folders found." : "No files or folders available."}
+                <TableCell colSpan={showDateColumn ? 6 : 5} className="text-center py-8">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    {isLoading ? (
+                      <>
+                        <RefreshCw className="h-8 w-8 text-muted-foreground animate-spin" />
+                        <span className="text-sm text-muted-foreground">Loading resources...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-sm text-muted-foreground">
+                          {searchTerm ? "No matching files or folders found." : "No files or folders available."}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             )}
