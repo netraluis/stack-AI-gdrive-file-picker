@@ -81,16 +81,20 @@ export function ResourceTable({
       const pathB = b.inode_path.path.split("/").filter(Boolean).pop() || ""
       valA = pathA.toLowerCase()
       valB = pathB.toLowerCase()
-    } else if (sortField === "status") {
+    } else if (sortField === "created_at") {
+      valA = new Date(a.created_at??0).getTime() 
+      valB = new Date(b.created_at??0).getTime() 
+    }else if (sortField === "status") {
       valA = a.status || ""
       valB = b.status || ""
-    } else {
+    } 
+    else {
       // Default sorting
       valA = a.resource_id
       valB = b.resource_id
     }
 
-    const comparison = valA > valB ? 1 : -1
+    const comparison = valA > valB ? 1 : valA < valB ? -1 : 0
     return sortDirection === "asc" ? comparison : -comparison
   })
 
