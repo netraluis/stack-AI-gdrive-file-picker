@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { LogOut, AlertCircle } from "lucide-react"
-import FilePickerKnowledge from "./components/filePickerKnowledge"
+// import FilePickerKnowledge from "./components/filePickerKnowledge"
+
+import  FilePickerKnowledge  from './components/filePickerKnowledge'
 
 
 
@@ -102,9 +104,9 @@ const ConnectionError = () => {
 
 // Main Dashboard Component
 const Dashboard = () => {
-  const { email, logout, connectionId } = useAuth()
+  const { email, logout, connectionId, loading, isLoadingConnections } = useAuth()
 
-  if (!connectionId) {
+  if (!connectionId && !loading && !isLoadingConnections) {
     return <ConnectionError />
   }
 
@@ -132,9 +134,9 @@ const Dashboard = () => {
 
 // Main Application Component with Auth Context
 const AppContent = () => {
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn,  loading} = useAuth()
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn && !loading) {
     return <LoginForm />
   }
 

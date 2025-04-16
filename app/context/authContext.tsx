@@ -19,19 +19,20 @@ interface AuthContextType {
   connectionId: string;
   login: (e?: React.FormEvent) => Promise<void>;
   logout: () => void;
+  isLoadingConnections: boolean;
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState('stackaitest@gmail.com');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState('');
   const [orgId, setOrgId] = useState('');
   const [connectionId, setConnectionId] = useState('');
 
-  const { connections, error: connectionError } = useConnections(authToken);
+  const { connections, error: connectionError, isLoading: isLoadingConnections } = useConnections(authToken);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken');
@@ -93,6 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setOrgId('');
     setConnectionId('');
     setIsLoggedIn(false);
+    setLoading(false);
 
     localStorage.removeItem('authToken');
     localStorage.removeItem('orgId');
@@ -112,7 +114,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     orgId,
     connectionId,
     login: handleLogin,
-    logout: handleLogout
+    logout: handleLogout,
+    isLoadingConnections,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
