@@ -1,5 +1,5 @@
 import { createApiSession } from '@/app/lib/auth';
-import { IndexResourcesParams } from '@/app/types/knowledge-base';
+import { IndexResourcesParams } from '@/app/types/knowledgeBase';
 import { NextRequest, NextResponse } from 'next/server';
 
 // URL: /api/knowledge-bases

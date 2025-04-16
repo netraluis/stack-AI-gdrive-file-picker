@@ -38,7 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
-import type { Resource } from "../types/stack-api"
+import type { Resource } from "../types/stackApi"
 
 // Define resource interface
 
@@ -443,7 +443,7 @@ const KnowledgeBaseHistorySidebar = ({
   )
 }
 
-export default function FilePicker() {
+export default function FilePickerKnowledge() {
   const { connectionId, authToken, isLoggedIn, orgId, email, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 

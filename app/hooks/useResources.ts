@@ -1,7 +1,7 @@
 // hooks/useResources.ts
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
-import { ResourceResponse } from '../types/stack-api';
+import { ResourceResponse } from '../types/stackApi';
 
 const fetcher = (url: string, token: string) =>
   fetch(url, {

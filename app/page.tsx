@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { LogOut, AlertCircle } from "lucide-react"
-import FilePicker from "./components/file-picker"
+import FilePickerKnowledge from "./components/filePickerKnowledge"
+
+
 
 // Login Form Component
 const LoginForm = () => {
@@ -122,7 +124,7 @@ const Dashboard = () => {
 
         <Separator className="mb-6" />
 
-        <FilePicker />
+        <FilePickerKnowledge />
       </div>
     </div>
   )

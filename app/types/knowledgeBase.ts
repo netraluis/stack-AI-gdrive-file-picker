@@ -2,7 +2,7 @@
  * Types for Knowledge Base operations
  */
 
-import { Resource } from "./stack-api";
+import { Resource } from "./stackApi";
 
 
 /** 

@@ -1,5 +1,5 @@
 import { createApiSession } from '@/app/lib/auth';
-import { listGDriveConnections } from '@/app/lib/connections-api';
+import { listGDriveConnections } from '@/app/lib/connectionsApi';
 import { NextRequest, NextResponse } from 'next/server';
 
 
