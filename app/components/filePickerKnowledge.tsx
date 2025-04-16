@@ -286,7 +286,7 @@ const ResourceItem = ({
               data-resource-id={resourceId}
               ref={(checkbox) => {
                 if (checkbox && isIndeterminate) {
-                  ;(checkbox as unknown as HTMLInputElement).indeterminate = true
+                  ; (checkbox as unknown as HTMLInputElement).indeterminate = true
                 }
               }}
             />
@@ -801,16 +801,16 @@ export default function FilePickerKnowledge() {
       const pathB = b.inode_path.path.split("/").filter(Boolean).pop() || ""
       valA = pathA.toLowerCase()
       valB = pathB.toLowerCase()
-    } else if (sortField === "status") {
-      valA = a.status || ""
-      valB = b.status || ""
+    } else if (sortField === "created_at") {
+      valA = a.created_at ? new Date(a.created_at).getTime() : 0
+      valB = b.created_at ? new Date(b.created_at).getTime() : 0
     } else {
       // valA = a[sortField] || ""
       // valB = b[sortField] || ""
       return 1
     }
 
-    const comparison = valA > valB ? 1 : -1
+    const comparison = valA === valB ? 0 : valA > valB ? 1 : -1;
 
     return sortDirection === "asc" ? comparison : -comparison
   })
@@ -887,7 +887,7 @@ export default function FilePickerKnowledge() {
                   <DropdownMenuItem onClick={() => setShowDateColumn(!showDateColumn)}>
                     <div className="flex items-center">
                       {showDateColumn && <Check className="h-4 w-4 mr-2" />}
-                      <span>Show Resource ID</span>
+                      <span>Show Created at</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -939,7 +939,7 @@ export default function FilePickerKnowledge() {
                           {sortField === "name" && <ArrowUpDown className="ml-1 h-4 w-4" />}
                         </div>
                       </TableHead>
-                      {showDateColumn && <TableHead className="w-[150px]">Resource ID</TableHead>}
+                      {showDateColumn && <TableHead className="w-[170px] cursor-pointer" onClick={() => handleSort("created_at")}><div className="flex items-center">Created At {sortField === "created_at" && <ArrowUpDown className="ml-1 h-4 w-4" />}</div></TableHead>}
                       <TableHead className="w-[120px] cursor-pointer" onClick={() => handleSort("status")}>
                         <div className="flex items-center">
                           Status

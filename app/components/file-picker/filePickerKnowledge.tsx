@@ -401,7 +401,7 @@ export default function FilePickerKnowledge() {
                   <DropdownMenuItem onClick={() => setShowDateColumn(!showDateColumn)}>
                     <div className="flex items-center">
                       {showDateColumn && <Check className="h-4 w-4 mr-2" />}
-                      <span>Show Resource ID</span>
+                      <span>Show created at</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

@@ -108,7 +108,7 @@ export function ResourceTable({
                   {sortField === "name" && <ArrowUpDown className="ml-1 h-4 w-4" />}
                 </div>
               </TableHead>
-              {showDateColumn && <TableHead className="w-[150px]">Resource ID</TableHead>}
+              {showDateColumn && <TableHead className="w-[150px]" onClick={() => handleSort("created_at")}>Created at</TableHead>}
               <TableHead className="w-[120px] cursor-pointer" onClick={() => handleSort("status")}>
                 <div className="flex items-center">
                   Status
