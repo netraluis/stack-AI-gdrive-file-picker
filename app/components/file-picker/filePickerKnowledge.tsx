@@ -100,6 +100,7 @@ export default function FilePickerKnowledge() {
     mutate: KBResourcesMutate,
   } = useKnowledgeBaseResources(knowledgeBaseId, authToken)
 
+
   const {
     trigger: deleteKB,
   } = useDeleteKnowledgeBaseResource(knowledgeBaseId)
@@ -160,6 +161,7 @@ export default function FilePickerKnowledge() {
 
   // Extract root resources from the response
   const rootResources = resources?.resources?.data || []
+
 
   // Index selected files
   const indexSelectedFiles = async () => {
@@ -238,9 +240,7 @@ export default function FilePickerKnowledge() {
       // Mark files as syncing
       const updatedStatus: Record<string, ResourceState> = {}
       selectedResources.forEach((id) => {
-        if (indexingStatus[id] === ResourceState.INDEXED) {
-          updatedStatus[id] = ResourceState.SYNCRONIZING
-        }
+        updatedStatus[id] = ResourceState.SYNCRONIZING
       })
 
       setIndexingStatus((prev) => ({
@@ -255,11 +255,12 @@ export default function FilePickerKnowledge() {
       await sync({ authToken })
 
       setSyncing(false)
-
       setHasSynced(true)
 
+      // Force a refresh of the KB resources data
+      await KBResourcesMutate()
+
       toast.success("Knowledge base has been synchronized successfully")
-      KBResourcesMutate()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Error syncing files:", error)

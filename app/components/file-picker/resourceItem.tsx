@@ -109,24 +109,19 @@ export function ResourceItem({
   // Indeterminate state: some children selected but not all
   const isIndeterminate = someChildrenSelected && !allChildrenSelected
 
-  // Handler for expanding/collapsing folders
-  const toggleExpand = (e: React.MouseEvent<HTMLTableRowElement>) => {
-    e.stopPropagation()
-    if (!isFolder) return
-
-    if (isExpanded) {
-      // Collapse folder
-      setExpandedFolders((prev) => prev.filter((id) => id !== resourceId))
-    } else {
-      // Expand folder
-      setExpandedFolders((prev) => [...prev, resourceId])
-    }
+  const handleCheckboxChange = () => {
+    onToggleSelection(resourceId, isFolder);
   }
 
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleToggleSelection = (e: any) => {
-    e.stopPropagation()
-    onToggleSelection(resourceId, isFolder)
+  const handleRowClick = (e: React.MouseEvent) => {
+    if (isFolder) {
+      e.stopPropagation();
+      if (isExpanded) {
+        setExpandedFolders((prev) => prev.filter((id) => id !== resourceId));
+      } else {
+        setExpandedFolders((prev) => [...prev, resourceId]);
+      }
+    }
   }
 
   return (
@@ -134,14 +129,14 @@ export function ResourceItem({
       <TableRow
         key={resourceId}
         className={`hover:bg-muted/50 ${isExpanded ? "bg-muted/50" : ""}`}
-        onClick={isFolder ? toggleExpand : undefined}
+        onClick={handleRowClick}
         style={{ cursor: isFolder ? "pointer" : "default" }}
       >
         <TableCell className="w-[50px]">
           <div className="flex items-center py-2">
             <Checkbox
               checked={isSelected}
-              onCheckedChange={handleToggleSelection}
+              onCheckedChange={handleCheckboxChange}
               disabled={isProcessing}
               onClick={(e) => e.stopPropagation()}
               data-resource-id={resourceId}
