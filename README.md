@@ -112,7 +112,7 @@ The application is deployed on Vercel at [https://stack-ai-gdrive-file-picker-jq
 
 ## 📹 Demo Video
 
-A demo video showcasing the application's features is available at [YOUR_VIDEO_URL]
+A demo video showcasing the application's features is available at [https://www.loom.com/share/75788f6037e246e8a79d894da23cf5ec?sid=b8444df8-abac-4b03-bdbc-4d8f9902323e]
 
 ## 📚 Documentation
 
