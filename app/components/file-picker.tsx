@@ -169,12 +169,6 @@ const ResourceItem = ({
       if (isFolder) {
         deselectAllChildren(resourceId)
       }
-
-      // If it has a parent, update the parent's state
-      if (resource.parent_id) {
-        // Uncheck the parent since at least one child is unchecked
-        setSelectedResources((prev) => prev.filter((id) => id !== resource.parent_id))
-      }
     } else {
       // Select this resource
       setSelectedResources((prev) => [...prev, resourceId])
@@ -186,19 +180,6 @@ const ResourceItem = ({
           selectAllChildren(resourceId)
         }
         // If no children are loaded, they will be selected when loaded
-      }
-
-      // If it has a parent, check if all siblings are selected
-      if (resource.parent_id) {
-        const siblings = childResourcesMap[resource.parent_id] || []
-        const allSiblingsSelected = siblings.every(
-          (sibling) => selectedResources.includes(sibling.resource_id) || sibling.resource_id === resourceId,
-        )
-
-        // If all siblings are selected, also select the parent
-        if (allSiblingsSelected) {
-          setSelectedResources((prev) => [...prev, resource.parent_id])
-        }
       }
     }
   }
@@ -265,7 +246,7 @@ const ResourceItem = ({
         [ResourceState.SYNCHRONIZED]: "bg-lime-200 hover:bg-lime-300 text-lime-800",
         [ResourceState.SYNCRONIZING]: "bg-amber-200 hover:bg-amber-300 text-amber-800",
         [ResourceState.RESOURCE]: "bg-zinc-200 hover:bg-zinc-300 text-zinc-800",
-      };
+      }
 
       return (
         <Badge variant="default" className={statusClasses[status]}>
@@ -305,13 +286,13 @@ const ResourceItem = ({
               data-resource-id={resourceId}
               ref={(checkbox) => {
                 if (checkbox && isIndeterminate) {
-                  ; (checkbox as unknown as HTMLInputElement).indeterminate = true
+                  ;(checkbox as unknown as HTMLInputElement).indeterminate = true
                 }
               }}
             />
           </div>
         </TableCell>
-        <TableCell className="px-2 py-2 whitespace-nowrap" style={{ paddingLeft: `${depth * 20}px` }}>
+        <TableCell className="w-[50px] px-2 py-2 whitespace-nowrap" style={{ paddingLeft: `${depth * 20}px` }}>
           <div className="flex items-center">
             {isFolder &&
               (isExpanded ? (
@@ -330,16 +311,21 @@ const ResourceItem = ({
             )}
           </div>
         </TableCell>
-        <TableCell className="px-2 py-2 whitespace-nowrap">
-          <span className={isFolder ? "text-blue-600 font-medium" : "text-foreground"}>{fileName}</span>
+        <TableCell className="w-[250px] px-2 py-2 whitespace-nowrap">
+          <span
+            className={`${isFolder ? "text-blue-600 font-medium" : "text-foreground"} truncate block`}
+            title={fileName}
+          >
+            {fileName}
+          </span>
         </TableCell>
         {showDateColumn && (
-          <TableCell className="px-4 py-2 whitespace-nowrap text-sm text-muted-foreground">
-            {resourceId.substring(0, 8)}...
+          <TableCell className="w-[150px] px-4 py-2 whitespace-nowrap text-sm text-muted-foreground">
+            {resource.created_at && new Intl.DateTimeFormat("en-US").format(new Date(resource.created_at))}
           </TableCell>
         )}
-        <TableCell className="px-4 py-2 whitespace-nowrap">{getStatusBadge()}</TableCell>
-        <TableCell className="px-4 py-2 whitespace-nowrap text-right">
+        <TableCell className="w-[120px] px-4 py-2 whitespace-nowrap">{getStatusBadge()}</TableCell>
+        <TableCell className="w-[100px] px-4 py-2 whitespace-nowrap text-right">
           <div className="flex justify-end space-x-2">
             {indexingStatus[resourceId] === ResourceState.SYNCHRONIZED && (
               <Button
@@ -491,11 +477,7 @@ export default function FilePicker() {
     setSyncing,
   } = useKnowledgeBaseStore()
 
-  const {
-    trigger: sync,
-    data: syncData,
-    error: triggerError,
-  } = useTriggerSync(orgId, knowledgeBaseId)
+  const { trigger: sync, data: syncData, error: triggerError } = useTriggerSync(orgId, knowledgeBaseId)
 
   const {
     data: KBResourcesData,
@@ -510,8 +492,6 @@ export default function FilePicker() {
     error: errorDeleteKb,
   } = useDeleteKnowledgeBaseResource(knowledgeBaseId)
 
-
-
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
   }
@@ -520,15 +500,17 @@ export default function FilePicker() {
     <div className="flex space-x-2 w-full sm:w-auto">
       {kbExists ? (
         <>
-          {!hasSynced && <Button
-            onClick={syncIndexedFiles}
-            variant="default"
-            disabled={isSyncing || selectedResources.length === 0}
-            className="flex items-center gap-1 w-full sm:w-auto"
-          >
-            <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
-            {isSyncing ? "Syncing..." : "Sync"}
-          </Button>}
+          {!hasSynced && (
+            <Button
+              onClick={syncIndexedFiles}
+              variant="default"
+              disabled={isSyncing || selectedResources.length === 0}
+              className="flex items-center gap-1 w-full sm:w-auto"
+            >
+              <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+              {isSyncing ? "Syncing..." : "Sync"}
+            </Button>
+          )}
           <Button
             onClick={() => clearKnowledgeBase()}
             variant="outline"
@@ -829,6 +811,7 @@ export default function FilePicker() {
     }
 
     const comparison = valA > valB ? 1 : -1
+
     return sortDirection === "asc" ? comparison : -comparison
   })
 
@@ -911,144 +894,160 @@ export default function FilePicker() {
               </DropdownMenu>
             </div>
           </CardHeader>
-          <CardContent className="flex-1 overflow-auto p-4">
-            <div className="flex flex-col space-y-4">
-              {/* Search, actions and KB history */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="relative w-full sm:w-auto sm:flex-grow max-w-md">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      value={searchTerm}
-                      onChange={handleSearch}
-                      placeholder="Search files and folders..."
-                      className="pl-8 w-full"
-                    />
-                  </div>
-                </div>
-
-                <ActionButtons />
-              </div>
-
-              {/* Active KB indicator */}
-              {kbExists && (
-                <Alert className="bg-blue-50 border-blue-200">
-                  <AlertTitle className="text-blue-800">Active Knowledge Base</AlertTitle>
-                  <AlertDescription className="flex justify-between items-center">
-                    <span className="text-blue-600">{knowledgeBaseId}</span>
-                    <Button onClick={() => clearKnowledgeBase()} variant="outline" size="sm" className="text-sm">
-                      Reset
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Files table */}
-              <div className="border rounded-md overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">{/* Checkbox header */}</TableHead>
-                        <TableHead className="w-[50px]">Type</TableHead>
-                        <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
-                          <div className="flex items-center">
-                            Name
-                            {sortField === "name" && <ArrowUpDown className="ml-1 h-4 w-4" />}
-                          </div>
-                        </TableHead>
-                        {showDateColumn && <TableHead>Resource ID</TableHead>}
-                        <TableHead className="cursor-pointer" onClick={() => handleSort("status")}>
-                          <div className="flex items-center">
-                            Status
-                            {sortField === "status" && <ArrowUpDown className="ml-1 h-4 w-4" />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading ? (
-                        // Loading skeleton
-                        Array(5)
-                          .fill(0)
-                          .map((_, i) => (
-                            <TableRow key={i}>
-                              <TableCell>
-                                <Skeleton className="h-4 w-4" />
-                              </TableCell>
-                              <TableCell>
-                                <Skeleton className="h-5 w-5" />
-                              </TableCell>
-                              <TableCell>
-                                <Skeleton className="h-4 w-32" />
-                              </TableCell>
-                              {showDateColumn && (
-                                <TableCell>
-                                  <Skeleton className="h-4 w-24" />
-                                </TableCell>
-                              )}
-                              <TableCell>
-                                <Skeleton className="h-4 w-16" />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Skeleton className="h-4 w-8 ml-auto" />
-                              </TableCell>
-                            </TableRow>
-                          ))
-                      ) : sortedRootResources.length > 0 ? (
-                        // Root resources with hierarchical children
-                        sortedRootResources.map((resource) => (
-                          <ResourceItem
-                            key={resource.resource_id}
-                            resource={resource}
-                            depth={0}
-                            expandedFolders={expandedFolders}
-                            setExpandedFolders={setExpandedFolders}
-                            selectedResources={selectedResources}
-                            setSelectedResources={setSelectedResources}
-                            onRemoveResource={handleRemoveResource}
-                            childResourcesMap={childResourcesMap}
-                            setChildResourcesMap={setChildResourcesMap}
-                            showDateColumn={showDateColumn}
-                            connectionId={connectionId}
-                            authToken={authToken}
-                            indexingStatus={indexingStatus}
-                            setIndexingStatus={setIndexingStatus}
-                          />
-                        ))
-                      ) : (
-                        // Empty state
-                        <TableRow>
-                          <TableCell
-                            colSpan={showDateColumn ? 6 : 5}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            {searchTerm ? "No matching files or folders found." : "No files or folders available."}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+          <CardContent className="p-4 flex flex-col space-y-4">
+            {/* Search, actions and KB history */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="relative w-full sm:w-auto sm:flex-grow max-w-md">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchTerm}
+                    onChange={handleSearch}
+                    placeholder="Search files and folders..."
+                    className="pl-8 w-full"
+                  />
                 </div>
               </div>
 
-
-              {/* File indexing progress indicator */}
-              {Object.values(indexingStatus).some((status) => status === ResourceState.INDEXING) && (
-                <Alert className="bg-blue-50 border-blue-200">
-                  <AlertTitle className="text-blue-800">Indexing files...</AlertTitle>
-                  <AlertDescription className="space-y-2">
-                    <div className="w-full bg-blue-200 rounded-full h-2.5">
-                      <div className="bg-blue-600 h-2.5 rounded-full w-3/4 animate-pulse"></div>
-                    </div>
-                    <p className="text-sm text-blue-700">
-                      Please wait while your files are being indexed. This may take a moment.
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              )}
+              <ActionButtons />
             </div>
+
+            {/* Active KB indicator */}
+            {kbExists && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertTitle className="text-blue-800">Active Knowledge Base</AlertTitle>
+                <AlertDescription className="flex justify-between items-center">
+                  <span className="text-blue-600">{knowledgeBaseId}</span>
+                  <Button onClick={() => clearKnowledgeBase()} variant="outline" size="sm" className="text-sm">
+                    Reset
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Files table with fixed header and scrollable body */}
+            <div className="border rounded-md overflow-hidden flex flex-col">
+              <div style={{ maxHeight: "calc(100vh - 250px)", overflowY: "auto" }}>
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="w-[50px]">{/* Checkbox header */}</TableHead>
+                      <TableHead className="w-[50px]">Type</TableHead>
+                      <TableHead className="w-[250px] cursor-pointer" onClick={() => handleSort("name")}>
+                        <div className="flex items-center">
+                          Name
+                          {sortField === "name" && <ArrowUpDown className="ml-1 h-4 w-4" />}
+                        </div>
+                      </TableHead>
+                      {showDateColumn && <TableHead className="w-[150px]">Resource ID</TableHead>}
+                      <TableHead className="w-[120px] cursor-pointer" onClick={() => handleSort("status")}>
+                        <div className="flex items-center">
+                          Status
+                          {sortField === "status" && <ArrowUpDown className="ml-1 h-4 w-4" />}
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-[100px] text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      // Loading skeleton
+                      Array(5)
+                        .fill(0)
+                        .map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="w-[50px]">
+                              <Skeleton className="h-4 w-4" />
+                            </TableCell>
+                            <TableCell className="w-[50px]">
+                              <Skeleton className="h-5 w-5" />
+                            </TableCell>
+                            <TableCell className="w-[250px]">
+                              <Skeleton className="h-4 w-32" />
+                            </TableCell>
+                            {showDateColumn && (
+                              <TableCell className="w-[150px]">
+                                <Skeleton className="h-4 w-24" />
+                              </TableCell>
+                            )}
+                            <TableCell className="w-[120px]">
+                              <Skeleton className="h-4 w-16" />
+                            </TableCell>
+                            <TableCell className="w-[100px] text-right">
+                              <Skeleton className="h-4 w-8 ml-auto" />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    ) : sortedRootResources.length > 0 ? (
+                      // Root resources with hierarchical children
+                      sortedRootResources.map((resource) => (
+                        <ResourceItem
+                          key={resource.resource_id}
+                          resource={resource}
+                          depth={0}
+                          expandedFolders={expandedFolders}
+                          setExpandedFolders={setExpandedFolders}
+                          selectedResources={selectedResources}
+                          setSelectedResources={setSelectedResources}
+                          onRemoveResource={handleRemoveResource}
+                          childResourcesMap={childResourcesMap}
+                          setChildResourcesMap={setChildResourcesMap}
+                          showDateColumn={showDateColumn}
+                          connectionId={connectionId}
+                          authToken={authToken}
+                          indexingStatus={indexingStatus}
+                          setIndexingStatus={setIndexingStatus}
+                        />
+                      ))
+                    ) : (
+                      // Empty state
+                      <TableRow>
+                        <TableCell colSpan={showDateColumn ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                          {searchTerm ? "No matching files or folders found." : "No files or folders available."}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* File indexing progress indicator */}
+            {Object.values(indexingStatus).some((status) => status === ResourceState.INDEXING) && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertTitle className="text-blue-800">Indexing files...</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <div className="w-full bg-blue-200 rounded-full h-2.5">
+                    <div className="bg-blue-600 h-2.5 rounded-full w-3/4 animate-pulse"></div>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    Please wait while your files are being indexed. This may take a moment.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Selected files indicator */}
+            {selectedResources.length > 0 && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertDescription className="flex justify-between items-center">
+                  <span className="text-blue-800">{selectedResources.length} file(s) selected</span>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" onClick={() => setSelectedResources([])}>
+                      Clear selection
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={indexSelectedFiles}
+                      className="flex items-center gap-1"
+                    >
+                      <Plus className="h-4 w-4" /> Index Selected
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       </div>
