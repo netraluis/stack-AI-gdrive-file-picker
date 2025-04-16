@@ -5,22 +5,18 @@
 import { ApiSession, AuthHeaders } from "../types/auth";
 
 
-const SUPABASE_AUTH_URL = "https://sb.stack-ai.com";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZic3VhZGZxaGtseG9rbWxodHNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NzM0NTg5ODAsImV4cCI6MTk4OTAzNDk4MH0.Xjry9m7oc42_MsLRc1bZhTTzip3srDjJ6fJMkwhXQ9s";
-const BACKEND_URL = "https://api.stack-ai.com";
-
 /**
  * Get authentication headers for the Stack AI API
  * Equivalent to get_auth_headers in the Python code
  */
 export async function getAuthHeaders(email: string, password: string): Promise<AuthHeaders> {
-  const requestUrl = `${SUPABASE_AUTH_URL}/auth/v1/token?grant_type=password`;
+  const requestUrl = `${process.env.SUPABASE_AUTH_URL}/auth/v1/token?grant_type=password`;
   
   const response = await fetch(requestUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Apikey': ANON_KEY,
+      'Apikey': process.env.ANON_KEY!,
     },
     body: JSON.stringify({
       email,
@@ -46,7 +42,7 @@ export async function getAuthHeaders(email: string, password: string): Promise<A
  * Equivalent to getting org_id in the Python code
  */
 export async function getOrgId(authHeaders: AuthHeaders): Promise<string> {
-  const response = await fetch(`${BACKEND_URL}/organizations/me/current`, {
+  const response = await fetch(`${process.env.BACKEND_URL}/organizations/me/current`, {
     headers: authHeaders,
   });
 
@@ -69,6 +65,7 @@ export function createApiSession(authHeaders: AuthHeaders): ApiSession {
     /**
      * Make a GET request with authentication
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async get(url: string): Promise<any> {
       const response = await fetch(url, {
         headers: this.headers,
@@ -84,6 +81,7 @@ export function createApiSession(authHeaders: AuthHeaders): ApiSession {
     /**
      * Make a POST request with authentication
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async post(url: string, data: any): Promise<any> {
       const response = await fetch(url, {
         method: 'POST',
@@ -104,6 +102,7 @@ export function createApiSession(authHeaders: AuthHeaders): ApiSession {
     /**
      * Make a DELETE request with authentication
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async delete(url: string): Promise<any> {
       const response = await fetch(url, {
         method: 'DELETE',

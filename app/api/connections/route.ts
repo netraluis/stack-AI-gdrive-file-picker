@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const connections = await listGDriveConnections(apiClient);
     
     return NextResponse.json(connections);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error listing connections:', error);
     

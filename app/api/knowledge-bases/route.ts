@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       knowledgeBase,
       message: 'Knowledge base created successfully'
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error creating knowledge base:', error);
     return NextResponse.json(

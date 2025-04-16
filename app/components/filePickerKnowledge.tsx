@@ -43,7 +43,7 @@ import type { Resource } from "../types/stackApi"
 // Define resource interface
 
 interface ResourceItemProps {
-  resource: any
+  resource: Resource
   depth?: number
   expandedFolders: string[]
   setExpandedFolders: React.Dispatch<React.SetStateAction<string[]>>
@@ -94,7 +94,7 @@ const ResourceItem = ({
   const isProcessing = indexingStatus[resourceId] === "indexing" || indexingStatus[resourceId] === "removing"
   const [getData, setGetData] = useState(false)
 
-  const { resources, isLoading, error, mutate } = useResources(getData ? connectionId : null, authToken, resourceId)
+  const { resources, isLoading } = useResources(getData ? connectionId : null, authToken, resourceId)
 
   // Load data when folder is expanded and we don't have the data yet
   useEffect(() => {
@@ -155,6 +155,7 @@ const ResourceItem = ({
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const toggleSelection = async (e: any) => {
     // If this is an event object with stopPropagation, use it
     if (e && typeof e.stopPropagation === "function") {
@@ -444,7 +445,7 @@ const KnowledgeBaseHistorySidebar = ({
 }
 
 export default function FilePickerKnowledge() {
-  const { connectionId, authToken, isLoggedIn, orgId, email, logout } = useAuth()
+  const { connectionId, authToken, orgId, email, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // Root resources state
@@ -463,7 +464,7 @@ export default function FilePickerKnowledge() {
   const { resources, isLoading, error, mutate } = useResources(connectionId, authToken)
 
   // KB creation hook
-  const { trigger: createKB, data: dataKB, error: errorKB, isMutating } = useCreateKnowledgeBase()
+  const { trigger: createKB, data: dataKB, error: errorKB } = useCreateKnowledgeBase()
 
   const {
     knowledgeBaseId,
@@ -477,19 +478,16 @@ export default function FilePickerKnowledge() {
     setSyncing,
   } = useKnowledgeBaseStore()
 
-  const { trigger: sync, data: syncData, error: triggerError } = useTriggerSync(orgId, knowledgeBaseId)
+  const { trigger: sync,} = useTriggerSync(orgId, knowledgeBaseId)
 
   const {
     data: KBResourcesData,
     error: KBResourcesError,
-    isLoading: KBResourcesIsLoading,
     mutate: KBResourcesMutate,
   } = useKnowledgeBaseResources(knowledgeBaseId, authToken)
 
   const {
-    trigger: deleteKB,
-    isMutating: isMutatingDeleteKB,
-    error: errorDeleteKb,
+    trigger: deleteKB
   } = useDeleteKnowledgeBaseResource(knowledgeBaseId)
 
   const toggleSidebar = () => {
@@ -643,6 +641,7 @@ export default function FilePickerKnowledge() {
       }))
 
       toast.success("Files have been successfully indexed")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Error indexing files:", error)
 
@@ -693,6 +692,7 @@ export default function FilePickerKnowledge() {
 
       toast.success("Knowledge base has been synchronized successfully")
       KBResourcesMutate()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Error syncing files:", error)
 
@@ -740,6 +740,7 @@ export default function FilePickerKnowledge() {
       })
 
       toast.success("The resource has been removed successfully")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error(`Error removing resource ${resourceId}:`, error)
 

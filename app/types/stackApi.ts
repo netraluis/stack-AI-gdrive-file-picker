@@ -11,7 +11,7 @@ export type Connection = {
     created_at: string;
     updated_at: string;
     connection_provider: string;
-    connection_provider_data?: any;
+    // connection_provider_data?: any;
   };
   
   /**

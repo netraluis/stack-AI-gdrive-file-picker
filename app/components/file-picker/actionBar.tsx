@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { RefreshCw, Plus, Search } from "lucide-react"
-import { useState, useCallback } from "react"
+import { useCallback } from "react"
 
 interface ActionBarProps {
   searchTerm: string

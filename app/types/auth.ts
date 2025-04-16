@@ -14,8 +14,11 @@ export type AuthHeaders = {
  */
 export interface ApiSession {
   headers: AuthHeaders;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get(url: string): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   post(url: string, data: any): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   delete(url: string): Promise<any>;
   
 }

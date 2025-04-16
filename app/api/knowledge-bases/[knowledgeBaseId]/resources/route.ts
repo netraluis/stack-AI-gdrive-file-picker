@@ -1,13 +1,19 @@
 import { createApiSession } from '@/app/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
+
+type Params = {
+  params: {
+    knowledgeBaseId: string;
+  };
+};
 // URL: /api/knowledge-bases/[knowledgeBaseId]/resources
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { knowledgeBaseId: string } }
+  { params }: Params 
 ) {
   try {
-    const { knowledgeBaseId } = await params;
+    const { knowledgeBaseId } = params;
     const authToken = request.headers.get('Authorization');
     
     if (!authToken) {
@@ -36,6 +42,7 @@ export async function DELETE(
       success: true,
       message: `Resource '${resourcePath}' has been removed from the knowledge base`
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error deleting knowledge base resource:', error);
     return NextResponse.json(

@@ -58,7 +58,7 @@ export function ResourceItem({
   const [getData, setGetData] = useState(false)
 
   // Use custom hook to fetch resources
-  const { resources, isLoading, error, mutate } = useResources(
+  const { resources, isLoading } = useResources(
     getData ? connectionId : null, 
     authToken, 
     resourceId
@@ -123,7 +123,7 @@ export function ResourceItem({
     }
   }
 
-  // Handler for checkbox toggle
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleToggleSelection = (e: any) => {
     e.stopPropagation()
     onToggleSelection(resourceId, isFolder)

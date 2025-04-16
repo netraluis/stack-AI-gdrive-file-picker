@@ -1,13 +1,19 @@
 import { createApiSession } from '@/app/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
+type Params = {
+  params: {
+    connectionId: string;
+  };
+};
+
 // URL: /api/connections/[connectionId]/resources/children
 export async function GET(
   request: NextRequest,
-  { params }: { params: { connectionId: string } }
+  { params }: Params 
 ) {
   try {
-    const { connectionId } = await params;
+    const { connectionId } = params;
     const authToken = request.headers.get('Authorization');
     
     if (!authToken) {
@@ -36,6 +42,7 @@ export async function GET(
       resources,
       parentId: resourceId || 'root'
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error listing resources:', error);
     return NextResponse.json(

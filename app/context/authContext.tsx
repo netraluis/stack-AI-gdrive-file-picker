@@ -81,6 +81,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem('authToken', data.authToken);
       localStorage.setItem('orgId', data.orgId);
       localStorage.setItem('userEmail', email);
+      
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Failed to log in. Please check your credentials.');

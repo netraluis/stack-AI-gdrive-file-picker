@@ -2,13 +2,19 @@ import { createApiSession } from '@/app/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 
+type Params = {
+  params: {
+    knowledgeBaseId: string;
+  };
+};
+
 // URL: /api/knowledge-bases/[knowledgeBaseId]/resources/children
 export async function GET(
   request: NextRequest,
-  { params }: { params: { knowledgeBaseId: string } }
+  { params }: Params
 ) {
   try {
-    const { knowledgeBaseId } = await params;
+    const { knowledgeBaseId } = params;
     const authToken = request.headers.get('Authorization');
     
     if (!authToken) {
@@ -30,6 +36,7 @@ export async function GET(
       resources,
       currentPath: resourcePath
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error listing knowledge base resources:', error);
     return NextResponse.json(

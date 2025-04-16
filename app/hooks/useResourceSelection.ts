@@ -46,7 +46,7 @@ export function useResourceSelection() {
    * Selects all children of a folder recursively
    */
   const selectAllChildren = useCallback((folderId: string, selectedIds: string[] = [...selectedResources]) => {
-    let newSelection = [...selectedIds]
+    const newSelection = [...selectedIds]
     
     // Add all known children recursively
     const addChildren = (parentId: string) => {

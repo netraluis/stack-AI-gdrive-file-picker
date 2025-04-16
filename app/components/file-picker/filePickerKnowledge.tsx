@@ -77,7 +77,6 @@ export default function FilePickerKnowledge() {
     trigger: createKB, 
     data: dataKB, 
     error: errorKB, 
-    isMutating 
   } = useCreateKnowledgeBase()
 
   const {
@@ -93,35 +92,27 @@ export default function FilePickerKnowledge() {
   } = useKnowledgeBaseStore()
 
   const { 
-    trigger: sync, 
-    data: syncData, 
-    error: triggerError 
+    trigger: sync 
   } = useTriggerSync(orgId, knowledgeBaseId)
 
   const {
     data: KBResourcesData,
-    error: KBResourcesError,
-    isLoading: KBResourcesIsLoading,
     mutate: KBResourcesMutate,
   } = useKnowledgeBaseResources(knowledgeBaseId, authToken)
 
   const {
     trigger: deleteKB,
-    isMutating: isMutatingDeleteKB,
-    error: errorDeleteKb,
   } = useDeleteKnowledgeBaseResource(knowledgeBaseId)
 
-  // Toggle sidebar visibility
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
   }
 
-  // Handle search term changes
   const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value)
   }, [])
 
-  // Update indexing status when KB resources data changes
+  
   useEffect(() => {
     if (KBResourcesData && KBResourcesData?.resources?.data) {
       // Update status to indexed
@@ -218,6 +209,7 @@ export default function FilePickerKnowledge() {
       }))
 
       toast.success("Files have been successfully indexed")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Error indexing files:", error)
 
@@ -268,6 +260,7 @@ export default function FilePickerKnowledge() {
 
       toast.success("Knowledge base has been synchronized successfully")
       KBResourcesMutate()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Error syncing files:", error)
 
@@ -315,6 +308,7 @@ export default function FilePickerKnowledge() {
       })
 
       toast.success("The resource has been removed successfully")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error(`Error removing resource ${resourceId}:`, error)
 

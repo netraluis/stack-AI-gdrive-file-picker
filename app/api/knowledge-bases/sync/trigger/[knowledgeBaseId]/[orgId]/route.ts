@@ -1,15 +1,21 @@
 import { createApiSession } from '@/app/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
+type Params = {
+  params: {
+    knowledgeBaseId: string;
+    orgId: string;
+  };
+};
 
 // URL: /api/knowledge-bases/sync/trigger/[knowledgeBaseId]/[orgId]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { knowledgeBaseId: string; orgId: string } }
+  { params }: Params
 ) {
 
   try {
-    const { knowledgeBaseId, orgId } = await params;
+    const { knowledgeBaseId, orgId } =  params;
     const authToken = request.headers.get('Authorization');
     
     if (!authToken) {
@@ -30,6 +36,7 @@ export async function GET(
       result,
       message: 'Knowledge base sync has been triggered'
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error triggering knowledge base sync:', error);
     return NextResponse.json(
