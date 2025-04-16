@@ -62,10 +62,24 @@ export function ResourceTable({
   }
 
   // Filter resources by search term
-  const filteredResources = resources.filter((resource) => {
-    const path = resource.inode_path.path.toLowerCase()
-    return path.includes(searchTerm.toLowerCase())
-  })
+  const filterResources = (resources: Resource[], term: string): Resource[] => {
+    if (!term) return resources;
+
+    return resources.filter((resource) => {
+      const path = resource.inode_path.path.toLowerCase();
+      const matches = path.includes(term.toLowerCase());
+      
+      // If it's a folder and we have its children, check them too
+      if (resource.inode_type === "directory" && childResourcesMap[resource.resource_id]) {
+        const childMatches = filterResources(childResourcesMap[resource.resource_id], term);
+        return matches || childMatches.length > 0;
+      }
+      
+      return matches;
+    });
+  };
+
+  const filteredResources = filterResources(resources, searchTerm);
 
   // Sort resources
   const sortedResources = [...filteredResources].sort((a, b) => {
