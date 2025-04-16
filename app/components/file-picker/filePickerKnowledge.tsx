@@ -261,6 +261,17 @@ export default function FilePickerKnowledge() {
       // Force a refresh of the KB resources data
       await KBResourcesMutate()
 
+      // Update status to synchronized
+      const synchronizedStatus: Record<string, ResourceState> = {}
+      selectedResources.forEach((id) => {
+        synchronizedStatus[id] = ResourceState.SYNCHRONIZED
+      })
+
+      setIndexingStatus((prev) => ({
+        ...prev,
+        ...synchronizedStatus,
+      }))
+
       toast.success("Knowledge base has been synchronized successfully")
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
