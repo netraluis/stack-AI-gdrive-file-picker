@@ -217,8 +217,8 @@ export function ResourceItem({
           {isLoading ? (
             <TableRow>
               <TableCell colSpan={showDateColumn ? 6 : 5}>
-                <div className="flex items-center py-2" style={{ paddingLeft: `${depth * 20 + 68}px` }}>
-                  <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin mr-2" />
+                <div className="flex items-center py-2" style={{ paddingLeft: `${depth * 20 + 48}px` }}>
+                  <RefreshCw className="h-4 w-4 text-blue-500 animate-spin mr-2" />
                   <span className="text-sm text-muted-foreground">Loading...</span>
                 </div>
               </TableCell>
