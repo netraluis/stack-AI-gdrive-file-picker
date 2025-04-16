@@ -39,6 +39,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 import type { Resource } from "../types/stackApi"
+import { ResourceState } from "../types/resourcesTypes"
 
 // Define resource interface
 
@@ -59,15 +60,7 @@ interface ResourceItemProps {
   setIndexingStatus: React.Dispatch<React.SetStateAction<Record<string, ResourceState>>>
 }
 
-enum ResourceState {
-  INDEXING = "indexing",
-  REMOVING = "removing",
-  INDEXED = "indexed",
-  FAILED = "failed",
-  SYNCHRONIZED = "synchronized",
-  SYNCRONIZING = "synchronizing",
-  RESOURCE = "resource",
-}
+
 
 // ResourceItem component - renders a single file/folder row with nested children
 const ResourceItem = ({

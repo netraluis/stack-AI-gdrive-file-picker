@@ -1,49 +1,40 @@
 import { createApiSession } from '@/app/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-type Params = {
-  params: {
-    connectionId: string;
-  };
-};
-
 // URL: /api/connections/[connectionId]/resources
-export async function GET(
-  request: NextRequest,
-  { params }: Params
-) {
+export async function GET(request: NextRequest) {
   try {
-    const { connectionId } = params;
     const authToken = request.headers.get('Authorization');
-    
+
     if (!authToken) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
-    
-    // Get query parameters
+
+    // Extraer connectionId de la URL
+    const segments = request.nextUrl.pathname.split('/');
+    const connectionId = segments[segments.indexOf('connections') + 1];
+
+    // Obtener resourceId desde los query params
     const searchParams = request.nextUrl.searchParams;
     const resourceId = searchParams.get('resource_id');
-    
+
     if (!resourceId) {
       return NextResponse.json(
         { error: 'Resource ID is required' },
         { status: 400 }
       );
     }
-    
+
     const apiSession = createApiSession({ Authorization: authToken });
 
-    console.log('API Session:', `${process.env.API_BASE_URL || 'https://api.stack-ai.com'}/connections/${connectionId}/resources?resource_id=${encodeURIComponent(resourceId)}`);
-    
-    // Get details for a specific resource
     const url = `${process.env.API_BASE_URL || 'https://api.stack-ai.com'}/connections/${connectionId}/resources?resource_id=${encodeURIComponent(resourceId)}`;
+
     const response = await apiSession.get(url);
 
-    console.log('Response:', response);
-    
+
     return NextResponse.json(response);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
