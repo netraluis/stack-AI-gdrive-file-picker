@@ -11,6 +11,7 @@ interface KnowledgeBaseState {
   switchToKnowledgeBase: (id: string) => void;
   removeFromHistory: (id: string) => void;
   setSyncing: (isSyncing: boolean) => void;
+  setKnowledgeBaseHistory: (history: string[]) => void;
 }
 
 export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => ({
@@ -60,4 +61,6 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => ({
   },
   
   setSyncing: (isSyncing) => set({ isSyncing }),
+  
+  setKnowledgeBaseHistory: (history) => set({ knowledgeBaseHistory: history }),
 }));

@@ -89,6 +89,7 @@ export default function FilePickerKnowledge() {
     switchToKnowledgeBase,
     removeFromHistory,
     setSyncing,
+    setKnowledgeBaseHistory,
   } = useKnowledgeBaseStore()
 
   const { 
@@ -324,6 +325,22 @@ export default function FilePickerKnowledge() {
     }
   }
 
+  const resetAllStates = () => {
+    // Clear selection states
+    setSelectedResources([])
+    setSearchTerm("")
+    setHasSynced(false)
+    setIndexingStatus({})
+    setShowDateColumn(true)
+    
+    // Clear knowledge base but preserve ID in history
+    const currentKbId = knowledgeBaseId
+    clearKnowledgeBase()
+    if (currentKbId && !knowledgeBaseHistory.includes(currentKbId)) {
+      setKnowledgeBaseHistory([...knowledgeBaseHistory, currentKbId])
+    }
+  }
+
   return (
     <div className="fixed inset-0 flex w-full h-screen overflow-hidden">
       {/* Sidebar */}
@@ -355,7 +372,7 @@ export default function FilePickerKnowledge() {
                   <span className="ml-1 truncate block">{knowledgeBaseId}</span>
                 </div>
               )}
-              <Button variant="outline" size="sm" className="w-full" onClick={() => clearKnowledgeBase()}>
+              <Button variant="outline" size="sm" className="w-full" onClick={resetAllStates}>
                 {kbExists ? "Reset KB" : "Create New KB"}
               </Button>
             </div>
@@ -410,7 +427,7 @@ export default function FilePickerKnowledge() {
               onSearchChange={handleSearchChange}
               onIndexSelected={indexSelectedFiles}
               onSync={syncIndexedFiles}
-              onNewKB={clearKnowledgeBase}
+              onNewKB={resetAllStates}
               selectedCount={selectedResources.length}
               kbExists={kbExists}
               isSyncing={isSyncing}
@@ -423,7 +440,7 @@ export default function FilePickerKnowledge() {
                 <AlertTitle className="text-blue-800">Active Knowledge Base</AlertTitle>
                 <AlertDescription className="flex justify-between items-center">
                   <span className="text-blue-600">{knowledgeBaseId}</span>
-                  <Button onClick={() => clearKnowledgeBase()} variant="outline" size="sm" className="text-sm">
+                  <Button onClick={resetAllStates} variant="outline" size="sm" className="text-sm">
                     Reset
                   </Button>
                 </AlertDescription>
