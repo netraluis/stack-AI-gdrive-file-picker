@@ -114,7 +114,7 @@ export function ResourceTable({
 
   return (
     <div className="border rounded-md overflow-hidden flex flex-col">
-      <div style={{ maxHeight: "calc(100vh - 250px)", overflowY: "auto" }}>
+      <div style={{ maxHeight: "calc(100vh - 190px)", overflowY: "auto" }}>
         <Table>
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>

@@ -425,9 +425,6 @@ export default function FilePickerKnowledge() {
                   Sign Out
                 </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={() => mutate()} className="flex items-center gap-1">
-                <RefreshCw className="h-4 w-4" /> Refresh
-              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -505,28 +502,6 @@ export default function FilePickerKnowledge() {
                   <p className="text-sm text-blue-700">
                     Please wait while your files are being indexed. This may take a moment.
                   </p>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Selected files indicator */}
-            {selectedResources.length > 0 && (
-              <Alert className="bg-blue-50 border-blue-200">
-                <AlertDescription className="flex justify-between items-center">
-                  <span className="text-blue-800">{selectedResources.length} file(s) selected</span>
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => setSelectedResources([])}>
-                      Clear selection
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={indexSelectedFiles}
-                      className="flex items-center gap-1"
-                    >
-                      <Plus className="h-4 w-4" /> Index Selected
-                    </Button>
-                  </div>
                 </AlertDescription>
               </Alert>
             )}
