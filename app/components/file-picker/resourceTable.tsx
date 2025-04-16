@@ -144,7 +144,7 @@ export function ResourceTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoading || (!isLoading && sortedResources.length === 0) ? (
               <TableSkeleton rows={5} showDateColumn={showDateColumn} />
             ) : sortedResources.length > 0 ? (
               // Root resources with hierarchical children
@@ -173,18 +173,9 @@ export function ResourceTable({
               <TableRow>
                 <TableCell colSpan={showDateColumn ? 6 : 5} className="text-center py-8">
                   <div className="flex flex-col items-center justify-center space-y-2">
-                    {isLoading ? (
-                      <>
-                        <RefreshCw className="h-8 w-8 text-muted-foreground animate-spin" />
-                        <span className="text-sm text-muted-foreground">Loading resources...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-sm text-muted-foreground">
-                          {searchTerm ? "No matching files or folders found." : "No files or folders available."}
-                        </span>
-                      </>
-                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {searchTerm ? "No matching files or folders found." : "No files or folders available."}
+                    </span>
                   </div>
                 </TableCell>
               </TableRow>
