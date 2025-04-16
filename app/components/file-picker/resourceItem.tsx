@@ -167,23 +167,31 @@ export function ResourceItem({
             )}
           </div>
         </TableCell>
-        <TableCell className="w-[250px] px-2 py-2 whitespace-nowrap">
-          <span
-            className={`${isFolder ? "text-blue-600 font-medium" : "text-foreground"} truncate block`}
-            title={fileName}
-          >
-            {fileName}
-          </span>
+        <TableCell className="w-[50px] px-2 py-2" style={{ width: '50px', minWidth: '50px', maxWidth: '50px' }}>
+          <div className="w-full overflow-hidden">
+            <span
+              className={`${isFolder ? "text-blue-600 font-medium" : "text-foreground"} block truncate`}
+              title={fileName}
+              style={{ 
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {fileName}
+            </span>
+          </div>
         </TableCell>
         {showDateColumn && (
-          <TableCell className="w-[150px] px-4 py-2 whitespace-nowrap text-sm text-muted-foreground">
+          <TableCell className="w-[120px] hidden md:table-cell px-4 py-2 whitespace-nowrap text-sm text-muted-foreground">
             {resource.created_at && new Intl.DateTimeFormat("en-US").format(new Date(resource.created_at))}
           </TableCell>
         )}
         <TableCell className="w-[120px] px-4 py-2 whitespace-nowrap">
           <StatusBadge status={resource.status} resourceId={resourceId} indexingStatus={indexingStatus} />
         </TableCell>
-        <TableCell className="w-[100px] px-4 py-2 whitespace-nowrap text-right">
+        <TableCell className="w-[20px] px-4 py-2 whitespace-nowrap text-right">
           <div className="flex justify-end space-x-2">
             {indexingStatus[resourceId] === ResourceState.SYNCHRONIZED && (
               <Button

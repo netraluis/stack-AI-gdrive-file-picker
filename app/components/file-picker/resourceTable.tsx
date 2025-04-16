@@ -68,13 +68,13 @@ export function ResourceTable({
     return resources.filter((resource) => {
       const path = resource.inode_path.path.toLowerCase();
       const matches = path.includes(term.toLowerCase());
-      
+
       // If it's a folder and we have its children, check them too
       if (resource.inode_type === "directory" && childResourcesMap[resource.resource_id]) {
         const childMatches = filterResources(childResourcesMap[resource.resource_id], term);
         return matches || childMatches.length > 0;
       }
-      
+
       return matches;
     });
   };
@@ -96,12 +96,12 @@ export function ResourceTable({
       valA = pathA.toLowerCase()
       valB = pathB.toLowerCase()
     } else if (sortField === "created_at") {
-      valA = new Date(a.created_at??0).getTime() 
-      valB = new Date(b.created_at??0).getTime() 
-    }else if (sortField === "status") {
+      valA = new Date(a.created_at ?? 0).getTime()
+      valB = new Date(b.created_at ?? 0).getTime()
+    } else if (sortField === "status") {
       valA = a.status || ""
       valB = b.status || ""
-    } 
+    }
     else {
       // Default sorting
       valA = a.resource_id
@@ -120,13 +120,20 @@ export function ResourceTable({
             <TableRow>
               <TableHead className="w-[50px]">{/* Checkbox header */}</TableHead>
               <TableHead className="w-[50px]">Type</TableHead>
-              <TableHead className="w-[250px] cursor-pointer" onClick={() => handleSort("name")}>
+              <TableHead className="w-[50px] sm:w-[100px] md:w-[200px] lg:w-[300px] xl:w-[500px] cursor-pointer" onClick={() => handleSort("name")}>
                 <div className="flex items-center">
                   Name
                   {sortField === "name" && <ArrowUpDown className="ml-1 h-4 w-4" />}
                 </div>
               </TableHead>
-              {showDateColumn && <TableHead className="w-[150px]" onClick={() => handleSort("created_at")}>Created at</TableHead>}
+              {showDateColumn && (
+                <TableHead className="w-[120px] hidden md:table-cell" onClick={() => handleSort("created_at")}>
+                  <div className="flex items-center">
+                    Created at
+                    {sortField === "created_at" && <ArrowUpDown className="ml-1 h-4 w-4" />}
+                  </div>
+                </TableHead>
+              )}
               <TableHead className="w-[120px] cursor-pointer" onClick={() => handleSort("status")}>
                 <div className="flex items-center">
                   Status
