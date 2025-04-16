@@ -380,7 +380,15 @@ export default function FilePickerKnowledge() {
         {sidebarOpen && (
           <div className="h-full flex flex-col">
             <div className="p-4 flex items-center justify-between border-b shrink-0">
-              <h2 className="text-lg font-semibold">Knowledge Base</h2>
+              <div className="flex items-center gap-2">
+                <div className="w-full h-8 flex items-center px-2">
+                  <img 
+                    src="/stack-ai.svg" 
+                    alt="Stack AI Logo" 
+                    className="h-full w-auto"
+                  />
+                </div>
+              </div>
               <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8">
                 <PanelLeftClose className="h-4 w-4" />
               </Button>
@@ -412,9 +420,11 @@ export default function FilePickerKnowledge() {
         <Card className="flex-1 border-0 rounded-none shadow-none flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 shrink-0">
             <div className="flex items-center">
-              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2">
-                {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-              </Button>
+              {!sidebarOpen && (
+                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              )}
               <CardTitle>Google Drive File Picker</CardTitle>
             </div>
             <div className="flex items-center space-x-2">
