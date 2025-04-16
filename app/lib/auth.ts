@@ -42,7 +42,7 @@ export async function getAuthHeaders(email: string, password: string): Promise<A
  * Equivalent to getting org_id in the Python code
  */
 export async function getOrgId(authHeaders: AuthHeaders): Promise<string> {
-  const response = await fetch(`${process.env.BACKEND_URL}/organizations/me/current`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/me/current`, {
     headers: authHeaders,
   });
 
