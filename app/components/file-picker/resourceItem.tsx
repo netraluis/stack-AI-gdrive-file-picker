@@ -158,7 +158,7 @@ export function ResourceItem({
               ))}
             {isFolder ? (
               isExpanded ? (
-                <FolderOpen className="h-5 w-5 text-blue-500" />
+                <FolderOpen className="h-5 w-5 text-muted-foreground" />
               ) : (
                 <Folder className="h-5 w-5 text-muted-foreground" />
               )
@@ -170,7 +170,7 @@ export function ResourceItem({
         <TableCell className="w-[50px] px-2 py-2" style={{ width: '50px', minWidth: '50px', maxWidth: '50px' }}>
           <div className="w-full overflow-hidden">
             <span
-              className={`${isFolder ? "text-blue-600 font-medium" : "text-foreground"} block truncate`}
+              className={`${isFolder ? "text-foreground font-medium" : "text-foreground"} block truncate`}
               title={fileName}
               style={{ 
                 display: 'block',
@@ -217,8 +217,8 @@ export function ResourceItem({
           {isLoading ? (
             <TableRow>
               <TableCell colSpan={showDateColumn ? 6 : 5}>
-                <div className="flex items-center py-2" style={{ paddingLeft: `${depth * 20 + 48}px` }}>
-                  <RefreshCw className="h-4 w-4 text-blue-500 animate-spin mr-2" />
+                <div className="flex items-center py-2" style={{ paddingLeft: `${depth * 20 + 68}px` }}>
+                  <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin mr-2" />
                   <span className="text-sm text-muted-foreground">Loading...</span>
                 </div>
               </TableCell>
